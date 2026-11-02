@@ -1,0 +1,36 @@
+Lift call system for use inside the factory
+
+
+## Development Environment
+	Both the callers and the call recipient are Windows tablet terminals
+	Development language: C# WPF
+	Database: build if needed; candidate environment: SQL Server
+	REST API: build if needed; IIS environment
+	Integration with a PLC is not being considered at this time
+	Callers and the call recipient are on the same Wi-Fi network. If IIS is needed, it will be placed in the same environment
+
+
+## Features to Implement
+	There are 5 caller terminals in total: Machine 1 to Machine 5
+	Called-side terminal: 1 unit. This will become 2–3 units in the future, but for now we will run a trial with just 1
+
+
+Caller
+	Button operation only
+	Button types: there are 3 call buttons: "Product Pickup", "Return Material Pickup", and "Trouble"
+	Cancel Call button: cancels the call
+
+	In addition to the buttons, the following information should be visible:
+	• Whether the call is being responded to ("Responding")
+	• Whether the lift is running (in operation) or stopped
+
+
+Called side
+	For the called-side screen, please interpret the requirements below and propose the optimal screen.
+	All operations are performed by touch
+
+	Required information and functions
+		• Which machine made the call and for what reason
+		• The order in which calls were made
+		• A way to let the caller know the call is being responded to (reflected on the caller screen)
+		• A way to let callers know whether the lift is running (in operation) or stopped (reflected on the caller screen)

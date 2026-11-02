@@ -1,0 +1,270 @@
+<Window x:Class="LiftCall.Receiver.ReceiverWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="リフト呼出（呼出先）"
+        Width="1344" Height="756"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Yu Gothic UI, Meiryo UI, Segoe UI">
+
+    <Window.Resources>
+
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- ===== 色定義 ===== -->
+        <SolidColorBrush x:Key="NavyBrush"   Color="#1E3A5F"/>
+        <SolidColorBrush x:Key="GreenBrush"  Color="#16A34A"/>
+        <SolidColorBrush x:Key="OrangeBrush" Color="#F28C0F"/>
+        <SolidColorBrush x:Key="BlueBrush"   Color="#2563EB"/>
+
+        <!-- ===== 背景（明るい水色グラデーション） ===== -->
+        <LinearGradientBrush x:Key="WindowBackground" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#F4F9FF" Offset="0"/>
+            <GradientStop Color="#CFE4FA" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- ===== 運転中／停車中 トグルボタン ===== -->
+        <Style x:Key="RunToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Bd"
+                                Background="{StaticResource OrangeBrush}"
+                                CornerRadius="18"
+                                BorderBrush="#66FFFFFF" BorderThickness="3">
+                            <TextBlock x:Name="Label" Text="■  停車中"
+                                       FontFamily="Segoe UI Symbol, Yu Gothic UI"
+                                       FontSize="44" FontWeight="Bold" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource GreenBrush}"/>
+                                <Setter TargetName="Label" Property="Text" Value="▶  運転中"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.9"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== 応答中／対応待 ボタン ===== -->
+        <Style x:Key="ResponseButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="170"/>
+            <Setter Property="Height" Value="66"/>
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Content" Value="対応待"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="BorderBrush" Value="#94A3B8"/>
+            <Setter Property="BorderThickness" Value="3"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="16">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsResponding}" Value="True">
+                    <Setter Property="Content" Value="応答中"/>
+                    <Setter Property="Background" Value="{StaticResource BlueBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="BorderBrush" Value="#93C5FD"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ===== 対応完了 ボタン ===== -->
+        <Style x:Key="CompleteButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="150"/>
+            <Setter Property="Height" Value="66"/>
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Content" Value="対応完了"/>
+            <Setter Property="Background" Value="{StaticResource GreenBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="16">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Background" Value="#CBD5E1"/>
+                                <Setter TargetName="Bd" Property="Opacity" Value="1"/>
+                                <Setter Property="Foreground" Value="#94A3B8"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+    <Setter TargetName="Bd" Property="Background" Value="#CBD5E1"/>
+    <Setter TargetName="Bd" Property="Opacity" Value="1"/>
+    <Setter Property="Foreground" Value="#94A3B8"/>
+    <Setter Property="Cursor" Value="Arrow"/>
+</Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== 呼出リスト 1行分のテンプレート ===== -->
+        <DataTemplate x:Key="CallItemTemplate">
+            <Border x:Name="Card" Height="110" Margin="12,5"
+                    Background="White"
+                    BorderBrush="{Binding AccentBrush}" BorderThickness="4"
+                    CornerRadius="20" Padding="20,0">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" Opacity="0.18"
+                                      BlurRadius="14" ShadowDepth="4" Direction="270"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 呼出順 -->
+                    <Border Grid.Column="0" Width="64" Height="64" CornerRadius="14"
+                            Background="{StaticResource NavyBrush}" Margin="0,0,24,0">
+                        <TextBlock Text="{Binding No}" FontSize="38" FontWeight="Bold"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- アイコン -->
+                    <TextBlock Grid.Column="1" Text="{Binding Icon}"
+                               FontFamily="Segoe UI Emoji" FontSize="64"
+                               VerticalAlignment="Center" Margin="0,0,24,0"/>
+
+                    <!-- 号機 -->
+                    <TextBlock Grid.Column="2" Text="{Binding UnitName}"
+                               FontSize="46" FontWeight="Bold"
+                               Foreground="{StaticResource NavyBrush}"
+                               VerticalAlignment="Center" Margin="0,0,32,0"/>
+
+                    <!-- 呼出内容 -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TypeText}"
+                                   FontSize="42" FontWeight="Bold"
+                                   Foreground="{Binding AccentBrush}"
+                                   VerticalAlignment="Center"/>
+                        <!-- パレット種類（製品引取のみ） -->
+                        <Border Background="{StaticResource NavyBrush}" CornerRadius="12"
+                                Padding="16,4" Margin="20,0,0,0" VerticalAlignment="Center"
+                                Visibility="{Binding HasPalette, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{Binding PaletteText}"
+                                       FontSize="30" FontWeight="Bold" Foreground="White"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 呼出時刻 -->
+                    <TextBlock Grid.Column="4"
+                               Text="{Binding CalledAt, StringFormat={}{0:HH:mm:ss}}"
+                               FontSize="32" FontWeight="Bold" Foreground="#64748B"
+                               VerticalAlignment="Center" Margin="0,0,32,0"/>
+
+                    <!-- 応答中／対応待 -->
+                    <Button Grid.Column="5" Style="{StaticResource ResponseButtonStyle}"
+                            Click="ResponseButton_Click"/>
+
+                    <!-- 対応完了（履歴へ記録して一覧から削除） -->
+                    <Button Grid.Column="6" Margin="12,0,0,0"
+                             IsEnabled="{Binding IsResponding}"
+                            Style="{StaticResource CompleteButtonStyle}"
+                            Click="CompleteButton_Click"/>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <!-- 応答中の行は薄い青で強調 -->
+                <DataTrigger Binding="{Binding IsResponding}" Value="True">
+                    <Setter TargetName="Card" Property="Background" Value="#DBEAFE"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+    </Window.Resources>
+
+    <Grid Background="{StaticResource WindowBackground}">
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ===== ヘッダー ===== -->
+            <Border Grid.Row="0" Margin="12,12,12,6" Padding="24,16"
+                    Background="{StaticResource NavyBrush}" CornerRadius="28">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" Opacity="0.25"
+                                      BlurRadius="20" ShadowDepth="6" Direction="270"/>
+                </Border.Effect>
+                <Grid>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="🚜" FontSize="60" FontFamily="Segoe UI Emoji"
+                                       VerticalAlignment="Center" Margin="0,0,20,0" Foreground="White"/>
+                            <TextBlock Text="リフト呼出" FontSize="60" FontWeight="Bold"
+                                       Foreground="White" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- 運転中／停車中 トグル -->
+                        <ToggleButton x:Name="RunToggle" Style="{StaticResource RunToggleStyle}"
+                                      Height="80" Margin="0,12,0,0"
+                                      Click="RunToggle_Click"/>
+                    </StackPanel>
+
+                    <!-- 6件を超えたときの表示 -->
+                    <TextBlock x:Name="OverflowText" Text="他 0 件"
+                               FontSize="32" FontWeight="Bold" Foreground="#FDE68A"
+                               HorizontalAlignment="Right" VerticalAlignment="Top"
+                               Visibility="Collapsed"/>
+                </Grid>
+            </Border>
+
+            <!-- ===== 呼出リスト（最大6行） ===== -->
+            <Grid Grid.Row="1" Margin="0,6,0,0">
+                <ItemsControl x:Name="CallList"
+                              ItemTemplate="{StaticResource CallItemTemplate}"
+                              VerticalAlignment="Top"/>
+
+                <TextBlock x:Name="EmptyText" Text="呼出はありません"
+                           FontSize="48" FontWeight="Bold" Foreground="#7B93B0"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="Collapsed"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

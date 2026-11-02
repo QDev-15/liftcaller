@@ -1,0 +1,20 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+
+  // "Memory"    : メモリ上に保持（DB不要。IISの再起動で消えます）
+  // "SqlServer" : SQL Server に保存（Sql/01_CreateTables.sql を事前に実行）
+  "Storage": "Memory",
+
+  // 本番IISでもSwagger UIを使う場合は true
+  "EnableSwagger": true,
+
+  "ConnectionStrings": {
+    "LiftCall": "Server=YOUR_SERVER;Database=PLC;User Id=YOUR_USER;Password=YOUR_PASSWORD;Encrypt=true;TrustServerCertificate=true;"
+  }
+}

@@ -426,3 +426,9 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# --- LiftCall project: secrets ---
+# Chứa connection string SQL Server có mật khẩu thật, không đưa lên Git.
+# Dùng alumiLiftCall/LiftCall.Api/appsettings.json.sample làm mẫu, hoặc override
+# qua biến môi trường ConnectionStrings__LiftCall khi deploy.
+alumiLiftCall/LiftCall.Api/appsettings.json
