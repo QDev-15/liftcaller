@@ -11,9 +11,7 @@
     <div class="kiosk-page">
         <StatusHeader UnitNo="@_identity.UnitNo!.Value" LiftRunning="@Sync.Snapshot.LiftState.IsRunning" ActiveCall="@ActiveCall" Now="@_now" />
 
-        <PaletteSelector @bind-Value="_palette" Disabled="@(ActiveCall is { IsResponding: true })" />
-
-        <CallButtons ActiveCall="@ActiveCall" Palette="@_palette" OnCall="OnCall" />
+        <CallButtons ActiveCall="@ActiveCall" OnCall="OnCall" />
 
         <CancelButton ActiveCall="@ActiveCall" OnCancel="OnCancel" />
 
@@ -26,10 +24,6 @@
 
 @code {
     private TerminalIdentity? _identity;
-
-    // Matches alumiLiftCall/LiftCall.Caller/CallerWindow.xaml.cs: no pallet picked by default — the
-    // Product Pickup button stays disabled until one is chosen (see CallButtons.IsDisabled).
-    private PaletteType _palette = PaletteType.None;
     private string? _toast;
     private DateTime _now = DateTime.Now;
     private PeriodicTimer? _clock;
@@ -77,29 +71,20 @@
     private async Task OnCall(CallType type)
     {
         if (_identity is null) return;
-        if (type == CallType.ProductPickup && _palette == PaletteType.None) return;
 
-        // Palette only applies to Product Pickup — matches the original's ReturnMaterial_Click/
-        // Trouble_Click, which always send PaletteType.None regardless of what's selected.
-        var palette = type == CallType.ProductPickup ? _palette : PaletteType.None;
-        var result = await Api.PutCallAsync(_identity.UnitNo!.Value, new PutCallRequest { CallType = type, Palette = palette });
+        // No pallet concept in the approved web design (prototype's call grid is just the 3 call
+        // types) — Palette stays in the data model for alumiLiftCall-DDL compatibility, but the web
+        // UI never collects one, so it's always sent as None.
+        var result = await Api.PutCallAsync(_identity.UnitNo!.Value, new PutCallRequest { CallType = type, Palette = PaletteType.None });
         if (result.Outcome == ApiCallOutcome.Conflict)
         {
             await ShowToastAsync("Lift đang xử lý cuộc gọi của bạn, không thể gọi lại.");
-            return;
-        }
-
-        if (type == CallType.ProductPickup)
-        {
-            // "呼出後はパレット選択をクリア（次回も選び直し）" — clear so the operator must pick again next time.
-            _palette = PaletteType.None;
         }
     }
 
     private async Task OnCancel()
     {
         if (_identity is null) return;
-        _palette = PaletteType.None;
         await Api.CancelCallAsync(_identity.UnitNo!.Value);
     }
 

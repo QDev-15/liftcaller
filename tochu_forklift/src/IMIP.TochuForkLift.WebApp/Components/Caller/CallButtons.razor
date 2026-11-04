@@ -20,15 +20,11 @@
 
 @code {
     [Parameter] public CallDto? ActiveCall { get; set; }
-    [Parameter] public PaletteType Palette { get; set; }
     [Parameter] public EventCallback<CallType> OnCall { get; set; }
 
     // While the active call is already being responded to, block new calls client-side —
-    // the server would reject it anyway (409, bug 9.1 fix in plan.md §9). Product Pickup is also
-    // blocked until a pallet is chosen, matching alumiLiftCall's ProductButton.IsEnabled.
-    private bool IsDisabled(CallType type) =>
-        ActiveCall is { IsResponding: true } ||
-        (type == CallType.ProductPickup && Palette == PaletteType.None);
+    // the server would reject it anyway (409, bug 9.1 fix in plan.md §9).
+    private bool IsDisabled(CallType type) => ActiveCall is { IsResponding: true };
 
     private string StateClassFor(CallType type) =>
         ActiveCall?.CallType == type ? (ActiveCall.IsResponding ? "responding" : "calling") : "";

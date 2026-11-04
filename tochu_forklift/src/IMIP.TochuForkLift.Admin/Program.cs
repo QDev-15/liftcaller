@@ -30,6 +30,7 @@ builder.Services.AddSingleton<AdminAuthService>();
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7016/";
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 builder.Services.AddScoped<ForkLiftApiClient>();
+builder.Services.AddScoped<AdminStateSyncService>();
 
 var app = builder.Build();
 

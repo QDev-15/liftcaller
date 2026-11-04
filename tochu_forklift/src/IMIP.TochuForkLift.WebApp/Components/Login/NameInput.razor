@@ -1,21 +1,39 @@
-@* Native <input list> + <datalist> autocomplete — touch-friendly, no custom dropdown needed (plan.md §6.3). *@
+@* Custom-styled autocomplete — native <datalist> renders as an unstyled browser popup that clashes
+   with the dark kiosk theme, so this builds the dropdown ourselves out of the existing
+   .login-suggest-list/.login-suggest-item tokens (plan.md §6.3). *@
 @inject ForkLiftApiClient Api
 
-<label class="login-label" for="loginName">Tên đăng nhập</label>
-<input id="loginName" class="login-name-input" list="loginNameSuggestions" autocomplete="off"
-       value="@Value" @oninput="OnInput" placeholder="Nhập tên Terminal..." />
-<datalist id="loginNameSuggestions">
-    @foreach (var s in _suggestions)
+<div class="login-name-wrap" @onfocusout="HandleFocusOut">
+    <label class="login-label" for="loginName">Tên đăng nhập</label>
+    <input id="loginName" class="login-name-input" autocomplete="off"
+           value="@Value" @oninput="OnInput" @onfocus="() => _open = true"
+           placeholder="Nhập tên Terminal..." />
+
+    @if (_open && FilteredSuggestions.Count > 0)
     {
-        <option value="@s.Name">@s.Name (@(s.Role == TerminalRole.Caller ? "Caller" : "Receiver"))</option>
+        <div class="login-suggest-list">
+            @foreach (var s in FilteredSuggestions)
+            {
+                <button type="button" class="login-suggest-item" @onclick="() => Choose(s)">
+                    <span>@s.Name</span>
+                    <span class="login-suggest-role">@(s.Role == TerminalRole.Caller ? "Caller" : "Receiver")</span>
+                </button>
+            }
+        </div>
     }
-</datalist>
+</div>
 
 @code {
     [Parameter] public string Value { get; set; } = "";
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
     private List<TerminalSuggestionDto> _suggestions = [];
+    private bool _open;
+
+    private List<TerminalSuggestionDto> FilteredSuggestions =>
+        string.IsNullOrWhiteSpace(Value)
+            ? _suggestions
+            : _suggestions.Where(s => s.Name.Contains(Value, StringComparison.OrdinalIgnoreCase)).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -26,6 +44,24 @@
     private async Task OnInput(ChangeEventArgs e)
     {
         Value = e.Value?.ToString() ?? "";
+        _open = true;
         await ValueChanged.InvokeAsync(Value);
+    }
+
+    private async Task Choose(TerminalSuggestionDto s)
+    {
+        Value = s.Name;
+        _open = false;
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    // focusout fires as soon as the input loses focus — including the instant a dropdown item is
+    // pressed (mousedown moves focus before click fires). Closing immediately would unmount the
+    // button before its own click/Choose() runs. Delaying it lets Choose() go first; the click
+    // itself already set _open = false by then, so this is a no-op in that case.
+    private async Task HandleFocusOut()
+    {
+        await Task.Delay(150);
+        _open = false;
     }
 }

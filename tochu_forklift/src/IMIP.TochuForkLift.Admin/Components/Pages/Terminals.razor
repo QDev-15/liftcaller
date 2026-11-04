@@ -9,12 +9,16 @@
 
 @if (_loadError is not null)
 {
-    <div class="card" style="border-color:var(--bad); color:var(--bad);">@_loadError</div>
+    <div class="conn-banner">@_loadError</div>
 }
 
-<button type="button" class="btn btn-primary" style="margin-bottom:14px;" @onclick="OpenCreate">+ Tạo Terminal mới</button>
-
-<TerminalList Terminals="_terminals" OnEdit="OpenEdit" />
+<section class="admin-section">
+    <div class="admin-section-head">
+        <h3>Caller &amp; Receiver</h3>
+        <button type="button" class="btn btn-primary" @onclick="OpenCreate">+ Tạo Terminal mới</button>
+    </div>
+    <TerminalList Terminals="_terminals" OnEdit="OpenEdit" />
+</section>
 
 <TerminalFormModal @ref="_modal" Show="_showModal" OnSaved="OnSaved" OnCancelled="CloseModal" />
 

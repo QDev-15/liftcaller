@@ -1,7 +1,7 @@
 @* Table of Caller/Receiver terminals — plan.md §4.4. *@
 
 <div class="table-wrap">
-    <table>
+    <table class="admin-table">
         <thead>
             <tr><th>Tên</th><th>Vai trò</th><th>Số máy</th><th>Trạng thái</th><th></th></tr>
         </thead>
@@ -17,15 +17,15 @@
                     <tr>
                         <td>@t.Name</td>
                         <td>@(t.Role == TerminalRole.Caller ? "Caller" : "Receiver")</td>
-                        <td>@(t.UnitNo?.ToString() ?? "—")</td>
+                        <td class="mono">@(t.UnitNo?.ToString() ?? "—")</td>
                         <td>
                             @if (t.IsActive)
                             {
-                                <span class="badge badge-on">Active</span>
+                                <span class="status-chip on">Active</span>
                             }
                             else
                             {
-                                <span class="badge badge-off">Inactive</span>
+                                <span class="status-chip off">Inactive</span>
                             }
                         </td>
                         <td><button type="button" class="btn btn-sm" @onclick="() => OnEdit.InvokeAsync(t)">Sửa</button></td>

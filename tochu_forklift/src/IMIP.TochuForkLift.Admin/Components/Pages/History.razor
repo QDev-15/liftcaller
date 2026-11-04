@@ -10,10 +10,10 @@
 
 @if (_loadError is not null)
 {
-    <div class="card" style="border-color:var(--bad); color:var(--bad);">@_loadError</div>
+    <div class="conn-banner">@_loadError</div>
 }
 
-<div class="card">
+<section class="admin-section">
     <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end;">
         <div class="form-row" style="margin-bottom:0;">
             <label class="form-label">Từ ngày</label>
@@ -37,39 +37,41 @@
             </select>
         </div>
         <button type="button" class="btn btn-primary" @onclick="SearchAsync">Tìm</button>
-        <a class="btn" href="@BuildCsvUrl()" target="_blank">Export CSV</a>
+        <a class="export-btn" href="@BuildCsvUrl()" target="_blank">Export CSV</a>
     </div>
-</div>
+</section>
 
-<div class="table-wrap">
-    <table>
-        <thead>
-            <tr><th>Máy</th><th>Loại</th><th>Pallet</th><th>Giờ gọi</th><th>Giờ hoàn thành</th><th>Người hoàn thành</th><th>Thời gian chờ phản hồi (s)</th><th>Tổng thời gian (s)</th></tr>
-        </thead>
-        <tbody>
-            @if (_entries.Count == 0)
-            {
-                <tr><td colspan="8" style="text-align:center; color:var(--muted);">Không có dữ liệu.</td></tr>
-            }
-            else
-            {
-                @foreach (var e in _entries)
+<section class="admin-section">
+    <div class="table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr><th>Máy</th><th>Loại</th><th>Pallet</th><th>Giờ gọi</th><th>Giờ hoàn thành</th><th>Người hoàn thành</th><th>Chờ phản hồi (s)</th><th>Tổng thời gian (s)</th></tr>
+            </thead>
+            <tbody>
+                @if (_entries.Count == 0)
                 {
-                    <tr>
-                        <td>Máy @e.UnitNo</td>
-                        <td>@TypeLabel(e.CallType)</td>
-                        <td>@(e.Palette == PaletteType.None ? "—" : e.Palette.ToString())</td>
-                        <td>@e.CalledAt.ToLocalTime().ToString("dd/MM HH:mm:ss")</td>
-                        <td>@e.CompletedAt.ToLocalTime().ToString("dd/MM HH:mm:ss")</td>
-                        <td>@(e.CompletedBy ?? "—")</td>
-                        <td>@(e.ResponseWaitSeconds?.ToString() ?? "—")</td>
-                        <td>@(e.DurationSeconds?.ToString() ?? "—")</td>
-                    </tr>
+                    <tr><td colspan="8" style="text-align:center; color:var(--muted);">Không có dữ liệu.</td></tr>
                 }
-            }
-        </tbody>
-    </table>
-</div>
+                else
+                {
+                    @foreach (var e in _entries)
+                    {
+                        <tr>
+                            <td>Máy @e.UnitNo</td>
+                            <td>@TypeLabel(e.CallType)</td>
+                            <td class="mono">@(e.Palette == PaletteType.None ? "—" : e.Palette.ToString())</td>
+                            <td class="mono">@e.CalledAt.ToLocalTime().ToString("dd/MM HH:mm:ss")</td>
+                            <td class="mono">@e.CompletedAt.ToLocalTime().ToString("dd/MM HH:mm:ss")</td>
+                            <td>@(e.CompletedBy ?? "—")</td>
+                            <td class="mono">@(e.ResponseWaitSeconds?.ToString() ?? "—")</td>
+                            <td class="mono">@(e.DurationSeconds?.ToString() ?? "—")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
 
 @code {
     private List<HistoryEntryDto> _entries = [];
