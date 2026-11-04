@@ -517,3 +517,5 @@ Toàn bộ câu hỏi mở ở vòng review trước đã có câu trả lời �
 | `Api` không có quyền `CREATE DATABASE` trên SQL Server thật (nhiều tổ chức khoá quyền này cho tài khoản ứng dụng) → auto-migrate lúc khởi động thất bại | Xác nhận trước với người quản trị SQL: hoặc cấp quyền tạo DB cho tài khoản kết nối, hoặc DBA tạo sẵn DB rỗng `imip_liftcall` và chỉ cấp quyền tạo bảng bên trong (migration vẫn chạy được, chỉ khác bước tạo DB) |
 | PIN mặc định `"0000"` giống nhau nếu Admin không đổi khi tạo Terminal — dễ đoán | Chấp nhận được ở mức bảo mật nội bộ LAN đã thống nhất cho toàn hệ thống (không có đăng nhập ở bản gốc); nhắc Admin đổi PIN khỏi mặc định khi đưa vào dùng thật, có thể thêm cảnh báo nhẹ trên UI Admin sau này nếu cần |
 | 3 project frontend/backend dùng 2 kiểu hosting khác nhau (`Api`+`Admin` = ASP.NET Core process, `WebApp` = static WASM) trong cùng 1 site IIS | Checklist deploy mục 8 tách rõ App Pool cho từng loại; vẫn ít phức tạp hơn so với đặt 3 site riêng biệt |
+
+
