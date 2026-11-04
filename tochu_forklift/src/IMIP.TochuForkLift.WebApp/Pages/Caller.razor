@@ -1,0 +1,128 @@
+@page "/caller"
+@layout IMIP.TochuForkLift.WebApp.Layout.MainLayout
+@implements IAsyncDisposable
+@inject AuthStateService Auth
+@inject StateSyncService Sync
+@inject ForkLiftApiClient Api
+@inject NavigationManager Nav
+
+@if (_identity is not null)
+{
+    <div class="kiosk-page">
+        <StatusHeader UnitNo="@_identity.UnitNo!.Value" LiftRunning="@Sync.Snapshot.LiftState.IsRunning" ActiveCall="@ActiveCall" Now="@_now" />
+
+        <PaletteSelector @bind-Value="_palette" Disabled="@(ActiveCall is { IsResponding: true })" />
+
+        <CallButtons ActiveCall="@ActiveCall" Palette="@_palette" OnCall="OnCall" />
+
+        <CancelButton ActiveCall="@ActiveCall" OnCancel="OnCancel" />
+
+        <button type="button" class="kiosk-change-device" @onclick="ChangeDevice">Đổi máy</button>
+
+        <Toast Message="@_toast" />
+        <ConnectionErrorOverlay Visible="@(!IsConnected)" />
+    </div>
+}
+
+@code {
+    private TerminalIdentity? _identity;
+
+    // Matches alumiLiftCall/LiftCall.Caller/CallerWindow.xaml.cs: no pallet picked by default — the
+    // Product Pickup button stays disabled until one is chosen (see CallButtons.IsDisabled).
+    private PaletteType _palette = PaletteType.None;
+    private string? _toast;
+    private DateTime _now = DateTime.Now;
+    private PeriodicTimer? _clock;
+    private Task? _clockLoop;
+
+    private CallDto? ActiveCall => _identity is null
+        ? null
+        : Sync.Snapshot.Calls.FirstOrDefault(c => c.UnitNo == _identity.UnitNo);
+
+    private bool IsConnected => Sync.ConnectionState is Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.LoadAsync();
+        if (Auth.Current is not { Role: TerminalRole.Caller, UnitNo: not null })
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+        _identity = Auth.Current;
+
+        await Sync.InitializeAsync();
+        Sync.Updated += OnSyncUpdated;
+        Sync.ConnectionStateChanged += OnSyncUpdated;
+
+        _clock = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _clockLoop = ClockLoopAsync();
+    }
+
+    private async Task ClockLoopAsync()
+    {
+        try
+        {
+            while (await _clock!.WaitForNextTickAsync())
+            {
+                _now = DateTime.Now;
+                StateHasChanged();
+            }
+        }
+        catch (ObjectDisposedException) { }
+    }
+
+    private void OnSyncUpdated() => InvokeAsync(StateHasChanged);
+
+    private async Task OnCall(CallType type)
+    {
+        if (_identity is null) return;
+        if (type == CallType.ProductPickup && _palette == PaletteType.None) return;
+
+        // Palette only applies to Product Pickup — matches the original's ReturnMaterial_Click/
+        // Trouble_Click, which always send PaletteType.None regardless of what's selected.
+        var palette = type == CallType.ProductPickup ? _palette : PaletteType.None;
+        var result = await Api.PutCallAsync(_identity.UnitNo!.Value, new PutCallRequest { CallType = type, Palette = palette });
+        if (result.Outcome == ApiCallOutcome.Conflict)
+        {
+            await ShowToastAsync("Lift đang xử lý cuộc gọi của bạn, không thể gọi lại.");
+            return;
+        }
+
+        if (type == CallType.ProductPickup)
+        {
+            // "呼出後はパレット選択をクリア（次回も選び直し）" — clear so the operator must pick again next time.
+            _palette = PaletteType.None;
+        }
+    }
+
+    private async Task OnCancel()
+    {
+        if (_identity is null) return;
+        _palette = PaletteType.None;
+        await Api.CancelCallAsync(_identity.UnitNo!.Value);
+    }
+
+    private async Task ShowToastAsync(string message)
+    {
+        _toast = message;
+        StateHasChanged();
+        await Task.Delay(2500);
+        _toast = null;
+        StateHasChanged();
+    }
+
+    private async Task ChangeDevice()
+    {
+        await Auth.ClearAsync();
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Sync.Updated -= OnSyncUpdated;
+        Sync.ConnectionStateChanged -= OnSyncUpdated;
+        _clock?.Dispose();
+        if (_clockLoop is not null) { try { await _clockLoop; } catch { } }
+    }
+}

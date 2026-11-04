@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/IMIP.TochuForkLift.Admin/IMIP.TochuForkLift.Admin.csproj" />
+    <Project Path="src/IMIP.TochuForkLift.Api/IMIP.TochuForkLift.Api.csproj" />
+    <Project Path="src/IMIP.TochuForkLift.Shared/IMIP.TochuForkLift.Shared.csproj" />
+    <Project Path="src/IMIP.TochuForkLift.WebApp/IMIP.TochuForkLift.WebApp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/IMIP.TochuForkLift.Api.Tests/IMIP.TochuForkLift.Api.Tests.csproj" />
+  </Folder>
+</Solution>

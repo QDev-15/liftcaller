@@ -1,0 +1,51 @@
+using IMIP.TochuForkLift.Api.Data;
+using IMIP.TochuForkLift.Api.Hubs;
+using IMIP.TochuForkLift.Shared.Contracts;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+
+namespace IMIP.TochuForkLift.Api.Services;
+
+public class StateBroadcaster(ForkLiftDbContext db, IHubContext<StateHub> hub, ILogger<StateBroadcaster> logger) : IStateBroadcaster
+{
+    public async Task<StateSnapshotDto> BuildSnapshotAsync(CancellationToken ct = default)
+    {
+        var liftState = await db.LiftStates.AsNoTracking().SingleOrDefaultAsync(x => x.Id == 1, ct);
+
+        // Trouble always first; within each tier, earliest call first — plan.md §6 (fixed, not configurable).
+        var calls = await db.LiftCalls
+            .AsNoTracking()
+            .OrderBy(c => c.CallType == (byte)CallType.Trouble ? 0 : 1)
+            .ThenBy(c => c.CalledAt)
+            .Select(c => new CallDto
+            {
+                UnitNo = c.UnitNo,
+                CallType = (CallType)c.CallType,
+                Palette = (PaletteType)c.Palette,
+                CalledAt = c.CalledAt,
+                IsResponding = c.IsResponding,
+                RespondedAt = c.RespondedAt,
+                RespondedBy = c.RespondedBy
+            })
+            .ToListAsync(ct);
+
+        return new StateSnapshotDto
+        {
+            LiftState = new LiftStateDto
+            {
+                IsRunning = liftState?.IsRunning ?? false,
+                UpdatedAt = liftState?.UpdatedAt ?? DateTime.UtcNow,
+                UpdatedBy = liftState?.UpdatedBy
+            },
+            Calls = calls
+        };
+    }
+
+    public async Task BroadcastAsync(CancellationToken ct = default)
+    {
+        var snapshot = await BuildSnapshotAsync(ct);
+        await hub.Clients.All.SendAsync("StateChanged", snapshot, ct);
+        logger.LogDebug("Broadcast StateChanged: {CallCount} active call(s), lift running = {IsRunning}",
+            snapshot.Calls.Count, snapshot.LiftState.IsRunning);
+    }
+}

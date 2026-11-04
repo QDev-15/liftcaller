@@ -1,0 +1,64 @@
+@page "/terminals"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ForkLiftApiClient Api
+
+<PageTitle>Terminal — Admin</PageTitle>
+
+<h1>Terminal</h1>
+
+@if (_loadError is not null)
+{
+    <div class="card" style="border-color:var(--bad); color:var(--bad);">@_loadError</div>
+}
+
+<button type="button" class="btn btn-primary" style="margin-bottom:14px;" @onclick="OpenCreate">+ Tạo Terminal mới</button>
+
+<TerminalList Terminals="_terminals" OnEdit="OpenEdit" />
+
+<TerminalFormModal @ref="_modal" Show="_showModal" OnSaved="OnSaved" OnCancelled="CloseModal" />
+
+@code {
+    private List<TerminalDto> _terminals = [];
+    private TerminalFormModal? _modal;
+    private bool _showModal;
+    private string? _loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        try
+        {
+            _terminals = await Api.GetTerminalsAsync();
+            _loadError = null;
+        }
+        catch
+        {
+            _loadError = "Không thể kết nối tới máy chủ Api.";
+        }
+    }
+
+    private void OpenCreate()
+    {
+        _modal?.OpenForCreate();
+        _showModal = true;
+    }
+
+    private void OpenEdit(TerminalDto terminal)
+    {
+        _modal?.OpenForEdit(terminal);
+        _showModal = true;
+    }
+
+    private async Task OnSaved()
+    {
+        _showModal = false;
+        await ReloadAsync();
+    }
+
+    private void CloseModal() => _showModal = false;
+}

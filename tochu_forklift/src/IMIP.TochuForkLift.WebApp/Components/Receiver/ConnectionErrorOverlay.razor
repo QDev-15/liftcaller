@@ -1,0 +1,15 @@
+@* Shared between Caller and Receiver — plan.md §4.3. Shown while the SignalR hub is disconnected. *@
+
+@if (Visible)
+{
+    <div class="overlay">
+        <div class="overlay-icon">@Icons.Warn</div>
+        <p class="overlay-title">Lỗi kết nối</p>
+        <p class="overlay-text">Mất kết nối tới máy chủ.</p>
+        <p class="overlay-hint">Nút bấm đã bị khoá để tránh nhầm lẫn cuộc gọi đã được gửi.</p>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+}

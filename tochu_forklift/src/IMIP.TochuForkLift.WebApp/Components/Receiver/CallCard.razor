@@ -1,0 +1,75 @@
+@* One queue/in-progress row — ported from the prototype's call-card (plan.md §6.3, §6.4). *@
+
+<div class="call-card @CardColorClass @(Overdue ? "overdue" : "")">
+    @if (Order is not null)
+    {
+        <span class="card-order">@Order</span>
+    }
+    <span class="card-icon">@TypeIcon</span>
+    <div class="card-body">
+        <span class="card-machine">Máy @Call.UnitNo</span>
+        <span class="card-type">@TypeLabel</span>
+    </div>
+    <span class="card-elapsed">@FormatElapsed(ElapsedSince)</span>
+
+    @if (ShowRespond)
+    {
+        <button type="button" class="respond-btn" @onclick="() => OnRespond.InvokeAsync()">@Icons.Check<span>Phản hồi</span></button>
+    }
+    @if (ShowComplete)
+    {
+        <button type="button" class="complete-btn" @onclick="() => OnComplete.InvokeAsync()">Hoàn thành</button>
+    }
+    @if (ShowRelease)
+    {
+        <button type="button" class="release-btn" @onclick="() => OnRelease.InvokeAsync()">Trả lại hàng đợi</button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public CallDto Call { get; set; } = null!;
+    [Parameter] public int? Order { get; set; }
+    [Parameter] public bool InProgress { get; set; }
+    [Parameter] public bool ShowRespond { get; set; }
+    [Parameter] public bool ShowComplete { get; set; }
+    [Parameter] public bool ShowRelease { get; set; }
+    [Parameter] public bool Overdue { get; set; }
+    [Parameter] public DateTime Now { get; set; } = DateTime.UtcNow;
+    [Parameter] public EventCallback OnRespond { get; set; }
+    [Parameter] public EventCallback OnComplete { get; set; }
+    [Parameter] public EventCallback OnRelease { get; set; }
+
+    private DateTime ElapsedSince => InProgress ? (Call.RespondedAt ?? Call.CalledAt) : Call.CalledAt;
+
+    // In-progress cards always use the accent "progress" border regardless of call type (matches the prototype).
+    private string CardColorClass => InProgress ? "progress" : Call.CallType switch
+    {
+        CallType.ProductPickup => "good",
+        CallType.ReturnMaterial => "warn",
+        CallType.Trouble => "bad",
+        _ => ""
+    };
+
+    private MarkupString TypeIcon => Call.CallType switch
+    {
+        CallType.ProductPickup => Icons.Box,
+        CallType.ReturnMaterial => Icons.Return,
+        _ => Icons.Warn
+    };
+
+    private string TypeLabel => Call.CallType switch
+    {
+        CallType.ProductPickup => "Lấy sản phẩm",
+        CallType.ReturnMaterial => "Lấy vật liệu trả về",
+        _ => "Sự cố"
+    };
+
+    private string FormatElapsed(DateTime since)
+    {
+        var elapsed = Now - since;
+        if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero;
+        var minutes = (int)elapsed.TotalMinutes;
+        var seconds = elapsed.Seconds;
+        return $"{minutes}:{seconds:D2}";
+    }
+}

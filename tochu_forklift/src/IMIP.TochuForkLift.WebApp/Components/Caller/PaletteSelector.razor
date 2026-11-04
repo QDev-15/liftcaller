@@ -1,0 +1,23 @@
+@* Pallet A/B/C picker for Product Pickup — ported from alumiLiftCall's Palette concept (plan.md §5). *@
+
+<div class="palette-row">
+    @foreach (var p in new[] { PaletteType.A, PaletteType.B, PaletteType.C })
+    {
+        <button type="button" class="palette-btn @(Value == p ? "active" : "")" @onclick="() => Select(p)" disabled="@Disabled">
+            Pallet @p
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public PaletteType Value { get; set; } = PaletteType.A;
+    [Parameter] public EventCallback<PaletteType> ValueChanged { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private async Task Select(PaletteType p)
+    {
+        if (Disabled) return;
+        Value = p;
+        await ValueChanged.InvokeAsync(p);
+    }
+}

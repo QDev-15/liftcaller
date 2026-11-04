@@ -1,0 +1,44 @@
+@* 3 big call buttons — ported from the prototype's caller screen call-grid (plan.md §6.3). *@
+
+<div class="call-grid">
+    <button type="button" class="call-btn good @StateClassFor(CallType.ProductPickup)"
+            disabled="@IsDisabled(CallType.ProductPickup)" @onclick="() => Call(CallType.ProductPickup)">
+        <span class="call-icon">@Icons.Box</span><span>Lấy sản phẩm</span>
+        @BadgeFor(CallType.ProductPickup)
+    </button>
+    <button type="button" class="call-btn warn @StateClassFor(CallType.ReturnMaterial)"
+            disabled="@IsDisabled(CallType.ReturnMaterial)" @onclick="() => Call(CallType.ReturnMaterial)">
+        <span class="call-icon">@Icons.Return</span><span>Lấy vật liệu trả về</span>
+        @BadgeFor(CallType.ReturnMaterial)
+    </button>
+    <button type="button" class="call-btn bad @StateClassFor(CallType.Trouble)"
+            disabled="@IsDisabled(CallType.Trouble)" @onclick="() => Call(CallType.Trouble)">
+        <span class="call-icon">@Icons.Warn</span><span>Sự cố</span>
+        @BadgeFor(CallType.Trouble)
+    </button>
+</div>
+
+@code {
+    [Parameter] public CallDto? ActiveCall { get; set; }
+    [Parameter] public PaletteType Palette { get; set; }
+    [Parameter] public EventCallback<CallType> OnCall { get; set; }
+
+    // While the active call is already being responded to, block new calls client-side —
+    // the server would reject it anyway (409, bug 9.1 fix in plan.md §9). Product Pickup is also
+    // blocked until a pallet is chosen, matching alumiLiftCall's ProductButton.IsEnabled.
+    private bool IsDisabled(CallType type) =>
+        ActiveCall is { IsResponding: true } ||
+        (type == CallType.ProductPickup && Palette == PaletteType.None);
+
+    private string StateClassFor(CallType type) =>
+        ActiveCall?.CallType == type ? (ActiveCall.IsResponding ? "responding" : "calling") : "";
+
+    private RenderFragment? BadgeFor(CallType type)
+    {
+        if (ActiveCall?.CallType != type) return null;
+        var text = ActiveCall.IsResponding ? "Đang phản hồi" : "Đang gọi...";
+        return @<span class="call-badge">@text</span>;
+    }
+
+    private Task Call(CallType type) => OnCall.InvokeAsync(type);
+}

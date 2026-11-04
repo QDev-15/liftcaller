@@ -1,0 +1,121 @@
+@page "/history"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ForkLiftApiClient Api
+@inject HttpClient Http
+
+<PageTitle>Lịch sử — Admin</PageTitle>
+
+<h1>Lịch sử cuộc gọi</h1>
+
+@if (_loadError is not null)
+{
+    <div class="card" style="border-color:var(--bad); color:var(--bad);">@_loadError</div>
+}
+
+<div class="card">
+    <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end;">
+        <div class="form-row" style="margin-bottom:0;">
+            <label class="form-label">Từ ngày</label>
+            <input class="form-control" type="date" @bind="_from" />
+        </div>
+        <div class="form-row" style="margin-bottom:0;">
+            <label class="form-label">Đến ngày</label>
+            <input class="form-control" type="date" @bind="_to" />
+        </div>
+        <div class="form-row" style="margin-bottom:0;">
+            <label class="form-label">Số máy</label>
+            <input class="form-control" type="number" @bind="_unitNo" style="width:100px;" />
+        </div>
+        <div class="form-row" style="margin-bottom:0;">
+            <label class="form-label">Loại</label>
+            <select class="form-control" @bind="_callType">
+                <option value="">Tất cả</option>
+                <option value="@CallType.ProductPickup">Lấy sản phẩm</option>
+                <option value="@CallType.ReturnMaterial">Lấy vật liệu trả về</option>
+                <option value="@CallType.Trouble">Sự cố</option>
+            </select>
+        </div>
+        <button type="button" class="btn btn-primary" @onclick="SearchAsync">Tìm</button>
+        <a class="btn" href="@BuildCsvUrl()" target="_blank">Export CSV</a>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>Máy</th><th>Loại</th><th>Pallet</th><th>Giờ gọi</th><th>Giờ hoàn thành</th><th>Người hoàn thành</th><th>Thời gian chờ phản hồi (s)</th><th>Tổng thời gian (s)</th></tr>
+        </thead>
+        <tbody>
+            @if (_entries.Count == 0)
+            {
+                <tr><td colspan="8" style="text-align:center; color:var(--muted);">Không có dữ liệu.</td></tr>
+            }
+            else
+            {
+                @foreach (var e in _entries)
+                {
+                    <tr>
+                        <td>Máy @e.UnitNo</td>
+                        <td>@TypeLabel(e.CallType)</td>
+                        <td>@(e.Palette == PaletteType.None ? "—" : e.Palette.ToString())</td>
+                        <td>@e.CalledAt.ToLocalTime().ToString("dd/MM HH:mm:ss")</td>
+                        <td>@e.CompletedAt.ToLocalTime().ToString("dd/MM HH:mm:ss")</td>
+                        <td>@(e.CompletedBy ?? "—")</td>
+                        <td>@(e.ResponseWaitSeconds?.ToString() ?? "—")</td>
+                        <td>@(e.DurationSeconds?.ToString() ?? "—")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<HistoryEntryDto> _entries = [];
+    private DateTime? _from;
+    private DateTime? _to;
+    private int? _unitNo;
+    private CallType? _callType;
+    private string? _loadError;
+
+    protected override async Task OnInitializedAsync() => await SearchAsync();
+
+    private async Task SearchAsync()
+    {
+        try
+        {
+            _entries = await Api.GetHistoryAsync(FromUtc, ToUtc, _unitNo, _callType);
+            _loadError = null;
+        }
+        catch
+        {
+            _loadError = "Không thể kết nối tới máy chủ Api.";
+        }
+    }
+
+    private string BuildCsvUrl()
+    {
+        var query = new List<string> { "format=csv" };
+        if (FromUtc is not null) query.Add($"from={Uri.EscapeDataString(FromUtc.Value.ToString("O"))}");
+        if (ToUtc is not null) query.Add($"to={Uri.EscapeDataString(ToUtc.Value.ToString("O"))}");
+        if (_unitNo is not null) query.Add($"unitNo={_unitNo}");
+        if (_callType is not null) query.Add($"callType={(int)_callType}");
+        return new Uri(Http.BaseAddress!, "api/history?" + string.Join("&", query)).ToString();
+    }
+
+    // The <input type="date"> pickers yield naive local dates, but CalledAt/CompletedAt are stored as
+    // UTC (CallService uses DateTime.UtcNow throughout) — convert using the server's local time zone
+    // (the on-site server, so it matches the factory's zone) before filtering, otherwise "today" would
+    // be off by the UTC offset near midnight.
+    private DateTime? FromUtc => _from is null ? null : DateTime.SpecifyKind(_from.Value, DateTimeKind.Local).ToUniversalTime();
+    private DateTime? ToUtc => _to is null ? null : DateTime.SpecifyKind(_to.Value.AddDays(1).AddTicks(-1), DateTimeKind.Local).ToUniversalTime();
+
+    private static string TypeLabel(CallType type) => type switch
+    {
+        CallType.ProductPickup => "Lấy sản phẩm",
+        CallType.ReturnMaterial => "Lấy vật liệu trả về",
+        CallType.Trouble => "Sự cố",
+        _ => type.ToString()
+    };
+}

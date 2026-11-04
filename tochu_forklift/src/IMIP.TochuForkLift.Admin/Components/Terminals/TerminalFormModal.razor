@@ -1,0 +1,125 @@
+@* Create/edit a Terminal — PIN is entered by the Admin, defaulted to "0000" (plan.md §5.1). *@
+@inject ForkLiftApiClient Api
+
+@if (Show)
+{
+    <div class="modal-backdrop">
+        <div class="modal-card">
+            <h2>@(_editingId is null ? "Tạo Terminal mới" : "Sửa Terminal")</h2>
+
+            <div class="form-row">
+                <label class="form-label">Tên</label>
+                <input class="form-control" @bind="_name" />
+            </div>
+
+            @if (_editingId is null)
+            {
+                <div class="form-row">
+                    <label class="form-label">Vai trò</label>
+                    <select class="form-control" @bind="_role">
+                        <option value="@TerminalRole.Caller">Caller</option>
+                        <option value="@TerminalRole.Receiver">Receiver</option>
+                    </select>
+                </div>
+            }
+
+            @if (_role == TerminalRole.Caller)
+            {
+                <div class="form-row">
+                    <label class="form-label">Số máy (UnitNo)</label>
+                    <input class="form-control" type="number" @bind="_unitNo" />
+                </div>
+            }
+
+            <div class="form-row">
+                <label class="form-label">@(_editingId is null ? "Mã PIN (4 số)" : "Đổi mã PIN (bỏ trống nếu giữ nguyên)")</label>
+                <input class="form-control" maxlength="4" @bind="_pin" placeholder="0000" />
+            </div>
+
+            @if (_editingId is not null)
+            {
+                <div class="form-row">
+                    <label class="form-label"><input type="checkbox" @bind="_isActive" /> Active</label>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="form-error">@_error</div>
+            }
+
+            <div class="modal-actions">
+                <button type="button" class="btn" @onclick="Cancel">Đóng</button>
+                <button type="button" class="btn btn-primary" @onclick="Save">Lưu</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancelled { get; set; }
+
+    private int? _editingId;
+    private string _name = "";
+    private TerminalRole _role = TerminalRole.Caller;
+    private int? _unitNo;
+    private string _pin = "";
+    private bool _isActive = true;
+    private string? _error;
+
+    public void OpenForCreate()
+    {
+        _editingId = null;
+        _name = "";
+        _role = TerminalRole.Caller;
+        _unitNo = null;
+        _pin = "0000";
+        _isActive = true;
+        _error = null;
+    }
+
+    public void OpenForEdit(TerminalDto terminal)
+    {
+        _editingId = terminal.Id;
+        _name = terminal.Name;
+        _role = terminal.Role;
+        _unitNo = terminal.UnitNo;
+        _pin = "";
+        _isActive = terminal.IsActive;
+        _error = null;
+    }
+
+    private async Task Save()
+    {
+        _error = null;
+
+        if (_editingId is null)
+        {
+            var result = await Api.CreateTerminalAsync(new CreateTerminalRequest
+            {
+                Name = _name,
+                Role = _role,
+                UnitNo = _role == TerminalRole.Caller ? _unitNo : null,
+                Pin = string.IsNullOrWhiteSpace(_pin) ? "0000" : _pin
+            });
+            if (!result.Success) { _error = result.ErrorMessage ?? "Không thể tạo Terminal."; return; }
+            await OnSaved.InvokeAsync();
+        }
+        else
+        {
+            var result = await Api.UpdateTerminalAsync(_editingId.Value, new UpdateTerminalRequest
+            {
+                Name = _name,
+                UnitNo = _role == TerminalRole.Caller ? _unitNo : null,
+                IsActive = _isActive,
+                NewPin = string.IsNullOrWhiteSpace(_pin) ? null : _pin
+            });
+            if (!result.Success) { _error = result.ErrorMessage ?? "Không thể lưu."; return; }
+            await OnSaved.InvokeAsync();
+        }
+    }
+
+    private async Task Cancel() => await OnCancelled.InvokeAsync();
+}

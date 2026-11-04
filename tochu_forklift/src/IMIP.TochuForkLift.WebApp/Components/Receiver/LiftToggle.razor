@@ -1,0 +1,35 @@
+@* Running ⇄ Stopped — confirms before switching, matching the original proposal's "long-press/confirm to avoid mis-taps". *@
+
+<button type="button" class="lift-toggle @(IsRunning ? "running" : "stopped")" @onclick="RequestToggle">
+    @Icons.Power<span>@(IsRunning ? "Đang chạy" : "Đang dừng")</span>
+    <span class="lift-toggle-hint">Nhấn để @(IsRunning ? "dừng" : "chạy lại")</span>
+</button>
+
+@if (_confirming)
+{
+    <div class="modal-backdrop" @onclick="() => _confirming = false">
+        <div class="modal-card" @onclick:stopPropagation="true">
+            <h3>@(IsRunning ? "Dừng lift?" : "Chạy lại lift?")</h3>
+            <p>@(IsRunning ? "Mọi màn hình Caller sẽ hiển thị lift đang dừng. Vẫn có thể gọi trong lúc này." : "Mọi màn hình Caller sẽ hiển thị lift đang chạy lại.")</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" @onclick="() => _confirming = false">Đóng</button>
+                <button type="button" class="btn-solid @(IsRunning ? "danger" : "")" @onclick="Confirm">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsRunning { get; set; }
+    [Parameter] public EventCallback<bool> OnToggle { get; set; }
+
+    private bool _confirming;
+
+    private void RequestToggle() => _confirming = true;
+
+    private async Task Confirm()
+    {
+        _confirming = false;
+        await OnToggle.InvokeAsync(!IsRunning);
+    }
+}

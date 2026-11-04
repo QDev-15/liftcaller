@@ -1,0 +1,36 @@
+@page "/login"
+@layout IMIP.TochuForkLift.Admin.Components.Layout.LoginLayout
+
+<PageTitle>Đăng nhập — Admin</PageTitle>
+
+<div class="login-page">
+    <div class="login-card">
+        <h1>Lift Call — Admin</h1>
+
+        @if (Error)
+        {
+            <div class="form-error">Sai tên đăng nhập hoặc mật khẩu.</div>
+        }
+
+        @* Plain HTML form POST (not a Blazor event) — cookie sign-in needs the real HttpContext
+           of the request, which an interactive Server circuit no longer has after connecting. *@
+        <form method="post" action="/account/login">
+            <div class="form-row">
+                <label class="form-label" for="username">Tên đăng nhập</label>
+                <input class="form-control" id="username" name="username" autocomplete="username" required />
+            </div>
+            <div class="form-row">
+                <label class="form-label" for="password">Mật khẩu</label>
+                <input class="form-control" id="password" name="password" type="password" autocomplete="current-password" required />
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Đăng nhập</button>
+        </form>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ErrorFlag { get; set; }
+
+    private bool Error => ErrorFlag is not null;
+}

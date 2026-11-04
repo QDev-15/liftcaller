@@ -1,0 +1,51 @@
+@* Touch numeric pad for the 4-digit PIN — auto-submits once 4 digits are entered, no separate "Login" button (plan.md §6.3). *@
+
+<div class="login-pin-dots">
+    @for (var i = 0; i < 4; i++)
+    {
+        var filled = i < _pin.Length;
+        <span class="login-pin-dot @(filled ? "filled" : "")"></span>
+    }
+</div>
+
+<div class="login-pinpad">
+    @for (var d = 1; d <= 9; d++)
+    {
+        var digit = d;
+        <button type="button" @onclick="() => Append(digit)">@digit</button>
+    }
+    <button type="button" @onclick="Clear">C</button>
+    <button type="button" @onclick="() => Append(0)">0</button>
+    <button type="button" @onclick="Backspace">⌫</button>
+</div>
+
+@code {
+    [Parameter] public EventCallback<string> OnComplete { get; set; }
+
+    private string _pin = "";
+
+    private async Task Append(int digit)
+    {
+        if (_pin.Length >= 4) return;
+        _pin += digit;
+        if (_pin.Length == 4)
+        {
+            var completed = _pin;
+            _pin = "";
+            await OnComplete.InvokeAsync(completed);
+        }
+    }
+
+    private void Backspace()
+    {
+        if (_pin.Length > 0) _pin = _pin[..^1];
+    }
+
+    private void Clear() => _pin = "";
+
+    public void Reset()
+    {
+        _pin = "";
+        StateHasChanged();
+    }
+}

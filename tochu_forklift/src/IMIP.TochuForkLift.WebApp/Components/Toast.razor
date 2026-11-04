@@ -1,0 +1,10 @@
+@* Shared transient toast — used for the "Yêu cầu đã được tiếp nhận" benign-409 message (plan.md §6.4) and similar notices. *@
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="toast">@Message</div>
+}
+
+@code {
+    [Parameter] public string? Message { get; set; }
+}

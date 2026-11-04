@@ -1,0 +1,90 @@
+/* Self-contained — no Bootstrap dependency. Admin is deliberately plainer/lighter than the
+   WebApp kiosk (plan.md §4.4): a utilitarian internal tool, not a touch kiosk. */
+:root{
+  --bg:#f4f6fa;
+  --surface:#ffffff;
+  --border:#dbe1ea;
+  --ink:#1d2433;
+  --muted:#6b7684;
+  --accent:#2563eb;
+  --good:#16a34a;
+  --warn:#d97706;
+  --bad:#dc2626;
+  --font-display:'Oswald','Arial Narrow',sans-serif;
+  --font-body:'IBM Plex Sans','Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono','Consolas',monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box;}
+html,body{background:var(--bg); height:100%; margin:0;}
+body{color:var(--ink); font-family:var(--font-body);}
+h1,h2,h3{font-family:var(--font-display); text-transform:uppercase; letter-spacing:.02em;}
+a{color:var(--accent);}
+
+.page{position:relative; display:flex; flex-direction:column;}
+main{flex:1;}
+.sidebar{background:#101827; color:#cbd5e1;}
+.top-row{background:var(--surface); border-bottom:1px solid var(--border); justify-content:flex-end; height:3.5rem; display:flex; align-items:center; padding:0 1rem;}
+.content{padding:1.5rem;}
+
+@media (min-width:641px){
+  .page{flex-direction:row;}
+  .sidebar{width:230px; height:100vh; position:sticky; top:0;}
+  .top-row{position:sticky; top:0; z-index:1;}
+}
+
+.navbar-brand{display:block; padding:1rem; color:#fff; font-family:var(--font-display); text-transform:uppercase; font-size:1.1rem; text-decoration:none;}
+.navbar-toggler{display:none;}
+.nav-scrollable{padding:0.5rem 0;}
+.nav-item{padding:0 0.5rem;}
+.nav-link{display:block; padding:0.6rem 1rem; color:#cbd5e1; text-decoration:none; border-radius:8px; font-size:0.92rem;}
+.nav-link:hover{background:rgba(255,255,255,0.08); color:#fff;}
+.nav-link.active{background:var(--accent); color:#fff;}
+
+h1{font-size:1.5rem; margin:0 0 1rem;}
+h2{font-size:1.15rem;}
+
+table{width:100%; border-collapse:collapse; background:var(--surface); border-radius:10px; overflow:hidden;}
+table th{text-align:left; font-size:0.74rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:10px 12px; border-bottom:2px solid var(--border);}
+table td{padding:10px 12px; border-bottom:1px solid var(--border); font-size:0.9rem;}
+table tr:last-child td{border-bottom:none;}
+.table-wrap{overflow-x:auto; background:var(--surface); border:1px solid var(--border); border-radius:10px;}
+.table-wrap table{border-radius:0;}
+
+.card{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; margin-bottom:18px;}
+.card-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:18px;}
+.stat-tile{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px;}
+.stat-tile .stat-label{font-size:0.76rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);}
+.stat-tile .stat-value{font-family:var(--font-mono); font-size:1.9rem; font-weight:600; margin-top:6px;}
+
+.btn{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); border-radius:8px; padding:8px 14px; font-size:0.86rem; cursor:pointer; text-decoration:none;}
+.btn:hover{border-color:var(--accent);}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+.btn-danger{background:var(--bad); border-color:var(--bad); color:#fff;}
+.btn-sm{padding:5px 10px; font-size:0.78rem;}
+.btn-outline-secondary{background:transparent; color:var(--muted);}
+
+.form-label{display:block; font-size:0.82rem; color:var(--muted); margin-bottom:4px;}
+.form-control{width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 11px; font-size:0.92rem; font-family:var(--font-body); background:var(--surface); color:var(--ink);}
+.form-row{margin-bottom:14px;}
+.form-error{color:var(--bad); font-size:0.84rem; margin-top:6px;}
+
+.badge{display:inline-flex; padding:3px 10px; border-radius:999px; font-size:0.72rem; font-weight:700;}
+.badge-on{background:rgba(22,163,74,0.14); color:var(--good);}
+.badge-off{background:rgba(220,38,38,0.14); color:var(--bad);}
+.badge-info{background:rgba(37,99,235,0.14); color:var(--accent);}
+.badge-warn{background:rgba(217,119,6,0.14); color:var(--warn);}
+
+.modal-backdrop{position:fixed; inset:0; background:rgba(15,20,30,0.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
+.modal-card{background:var(--surface); border-radius:14px; padding:22px; width:min(420px,100%); display:flex; flex-direction:column; gap:14px; box-shadow:0 20px 50px rgba(0,0,0,0.25);}
+.modal-actions{display:flex; justify-content:flex-end; gap:10px;}
+
+.login-page{min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg);}
+.login-card{width:min(360px,100%); background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:28px; display:flex; flex-direction:column; gap:14px;}
+.login-card h1{text-align:center; margin-bottom:4px;}
+
+#blazor-error-ui{color-scheme:light only; background:lightyellow; bottom:0; box-shadow:0 -1px 2px rgba(0,0,0,0.2); box-sizing:border-box; display:none; left:0; padding:0.6rem 1.25rem 0.7rem; position:fixed; width:100%; z-index:1000;}
+#blazor-error-ui .dismiss{cursor:pointer; position:absolute; right:0.75rem; top:0.5rem;}
+.blazor-error-boundary{background:#b32121; padding:1rem; color:#fff; border-radius:8px;}
+.blazor-error-boundary::after{content:"Đã xảy ra lỗi.";}
+.validation-message{color:var(--bad); font-size:0.84rem;}

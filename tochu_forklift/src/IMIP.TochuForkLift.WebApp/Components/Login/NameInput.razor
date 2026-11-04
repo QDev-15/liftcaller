@@ -1,0 +1,31 @@
+@* Native <input list> + <datalist> autocomplete — touch-friendly, no custom dropdown needed (plan.md §6.3). *@
+@inject ForkLiftApiClient Api
+
+<label class="login-label" for="loginName">Tên đăng nhập</label>
+<input id="loginName" class="login-name-input" list="loginNameSuggestions" autocomplete="off"
+       value="@Value" @oninput="OnInput" placeholder="Nhập tên Terminal..." />
+<datalist id="loginNameSuggestions">
+    @foreach (var s in _suggestions)
+    {
+        <option value="@s.Name">@s.Name (@(s.Role == TerminalRole.Caller ? "Caller" : "Receiver"))</option>
+    }
+</datalist>
+
+@code {
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    private List<TerminalSuggestionDto> _suggestions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _suggestions = await Api.GetSuggestionsAsync(); }
+        catch { /* best-effort — login still works by typing the exact name */ }
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString() ?? "";
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

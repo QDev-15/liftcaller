@@ -1,0 +1,127 @@
+@page "/"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject ForkLiftApiClient Api
+
+<PageTitle>Dashboard — Admin</PageTitle>
+
+<h1>Dashboard</h1>
+
+@if (!_connected)
+{
+    <div class="card" style="border-color:var(--bad); color:var(--bad);">Mất kết nối tới máy chủ, đang thử kết nối lại…</div>
+}
+
+<div class="card-grid">
+    <div class="stat-tile">
+        <div class="stat-label">Trạng thái Lift</div>
+        <div class="stat-value">@(Snapshot.LiftState.IsRunning ? "Đang chạy" : "Đang dừng")</div>
+    </div>
+    <div class="stat-tile">
+        <div class="stat-label">Cuộc gọi đang active</div>
+        <div class="stat-value">@Snapshot.Calls.Count</div>
+    </div>
+    <div class="stat-tile">
+        <div class="stat-label">Sự cố chưa phản hồi</div>
+        <div class="stat-value">@Snapshot.Calls.Count(c => c.CallType == CallType.Trouble && !c.IsResponding)</div>
+    </div>
+    <div class="stat-tile">
+        <div class="stat-label">Đang phản hồi</div>
+        <div class="stat-value">@Snapshot.Calls.Count(c => c.IsResponding)</div>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>Máy</th><th>Loại</th><th>Pallet</th><th>Giờ gọi</th><th>Trạng thái</th><th>Người nhận</th></tr>
+        </thead>
+        <tbody>
+            @if (Snapshot.Calls.Count == 0)
+            {
+                <tr><td colspan="6" style="text-align:center; color:var(--muted);">Không có cuộc gọi nào.</td></tr>
+            }
+            else
+            {
+                @foreach (var c in Snapshot.Calls)
+                {
+                    <tr>
+                        <td>Máy @c.UnitNo</td>
+                        <td>@TypeLabel(c.CallType)</td>
+                        <td>@(c.Palette == PaletteType.None ? "—" : c.Palette.ToString())</td>
+                        <td>@c.CalledAt.ToLocalTime().ToString("HH:mm:ss")</td>
+                        <td>
+                            @if (c.IsResponding)
+                            {
+                                <span class="badge badge-info">Đang phản hồi</span>
+                            }
+                            else if (c.CallType == CallType.Trouble)
+                            {
+                                <span class="badge badge-off">Sự cố — chưa phản hồi</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-warn">Đang gọi</span>
+                            }
+                        </td>
+                        <td>@(c.RespondedBy ?? "—")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private StateSnapshotDto Snapshot { get; set; } = new();
+    private bool _connected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Snapshot = await Api.GetStateAsync();
+            Api.StateChanged += OnStateChanged;
+            Api.HubConnectionStateChanged += OnConnectionStateChanged;
+            await Api.StartHubAsync();
+            _connected = true;
+        }
+        catch
+        {
+            // Api unreachable (e.g. server/IIS restart, plan.md §8) — render the page with the
+            // "mất kết nối" banner instead of crashing; the circuit stays alive to retry later.
+            _connected = false;
+        }
+    }
+
+    private void OnStateChanged(StateSnapshotDto snapshot)
+    {
+        Snapshot = snapshot;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnConnectionStateChanged(Microsoft.AspNetCore.SignalR.Client.HubConnectionState state)
+    {
+        _connected = state == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private static string TypeLabel(CallType type) => type switch
+    {
+        CallType.ProductPickup => "Lấy sản phẩm",
+        CallType.ReturnMaterial => "Lấy vật liệu trả về",
+        CallType.Trouble => "Sự cố",
+        _ => type.ToString()
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        Api.StateChanged -= OnStateChanged;
+        Api.HubConnectionStateChanged -= OnConnectionStateChanged;
+        // Stop the hub (Dashboard-only concern) but don't dispose the shared scoped ForkLiftApiClient
+        // itself — Terminals/History reuse the same instance for the rest of this circuit; DI disposes
+        // it when the circuit ends.
+        await Api.StopHubAsync();
+    }
+}

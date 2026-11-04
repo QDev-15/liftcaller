@@ -1,0 +1,31 @@
+@* "Hàng đợi" — every unclaimed call, same for every Receiver (plan.md §6.4). *@
+
+<div class="queue-section">
+    <h3 class="section-title">Hàng đợi @if (Calls.Count > 0) { <span class="count">@Calls.Count</span> }</h3>
+
+    @if (Calls.Count == 0)
+    {
+        <p class="empty-note">Không có cuộc gọi nào đang chờ.</p>
+    }
+    else
+    {
+        <div class="queue-list">
+            @for (var i = 0; i < Calls.Count; i++)
+            {
+                var call = Calls[i];
+                var order = i + 1;
+                <CallCard Call="@call" Order="@order" Now="@Now"
+                          Overdue="@(Now - call.CalledAt >= OverdueThreshold)"
+                          ShowRespond="true" OnRespond="() => OnRespond.InvokeAsync(call.UnitNo)" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly TimeSpan OverdueThreshold = TimeSpan.FromMinutes(3);
+
+    [Parameter, EditorRequired] public List<CallDto> Calls { get; set; } = [];
+    [Parameter] public DateTime Now { get; set; } = DateTime.UtcNow;
+    [Parameter] public EventCallback<int> OnRespond { get; set; }
+}

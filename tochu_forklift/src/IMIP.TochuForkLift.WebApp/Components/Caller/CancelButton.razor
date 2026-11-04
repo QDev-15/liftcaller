@@ -1,0 +1,45 @@
+@* Cancel Call — confirms first if the lift is already responding, to match the original proposal's requirement. *@
+
+<button type="button" class="cancel-btn" disabled="@(ActiveCall is null)" @onclick="RequestCancel">
+    @Icons.X<span>Hủy gọi</span>
+</button>
+
+@if (_confirming)
+{
+    <div class="modal-backdrop" @onclick="() => _confirming = false">
+        <div class="modal-card" @onclick:stopPropagation="true">
+            <h3>Hủy cuộc gọi?</h3>
+            <p>Lift đang phản hồi cuộc gọi này. Hủy ngay bây giờ sẽ dừng việc xử lý.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" @onclick="() => _confirming = false">Đóng</button>
+                <button type="button" class="btn-solid danger" @onclick="ConfirmCancel">Hủy gọi</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public CallDto? ActiveCall { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private bool _confirming;
+
+    private async Task RequestCancel()
+    {
+        if (ActiveCall is null) return;
+        if (ActiveCall.IsResponding)
+        {
+            _confirming = true;
+        }
+        else
+        {
+            await OnCancel.InvokeAsync();
+        }
+    }
+
+    private async Task ConfirmCancel()
+    {
+        _confirming = false;
+        await OnCancel.InvokeAsync();
+    }
+}

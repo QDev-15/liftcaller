@@ -1,0 +1,84 @@
+@page "/"
+@layout IMIP.TochuForkLift.WebApp.Layout.MainLayout
+@inject ForkLiftApiClient Api
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+
+<div class="login-page">
+    <div class="login-brand">@Icons.Lift<span>LIFT CALL</span></div>
+
+    <div class="login-card">
+        <div>
+            <NameInput @bind-Value="_name" />
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_name))
+        {
+            <div>
+                <span class="login-label">Mã PIN (4 số)</span>
+                <PinPad @ref="_pinPad" OnComplete="OnPinComplete" />
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="login-error">@_error</div>
+        }
+    </div>
+</div>
+
+@code {
+    private string _name = "";
+    private string? _error;
+    private PinPad? _pinPad;
+    private bool _submitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.LoadAsync();
+        if (Auth.Current is not null)
+        {
+            RedirectForRole(Auth.Current.Role);
+        }
+    }
+
+    private async Task OnPinComplete(string pin)
+    {
+        if (_submitting) return;
+        _submitting = true;
+        _error = null;
+
+        try
+        {
+            var result = await Api.LoginAsync(new LoginRequest { Name = _name.Trim(), Pin = pin });
+            if (result is null)
+            {
+                _error = "Sai tên hoặc mã PIN. Vui lòng thử lại.";
+                _pinPad?.Reset();
+                return;
+            }
+
+            await Auth.SetAsync(new TerminalIdentity
+            {
+                TerminalId = result.TerminalId,
+                Name = result.Name,
+                Role = result.Role,
+                UnitNo = result.UnitNo
+            });
+
+            RedirectForRole(result.Role);
+        }
+        catch
+        {
+            _error = "Không thể kết nối tới máy chủ. Vui lòng thử lại.";
+            _pinPad?.Reset();
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void RedirectForRole(TerminalRole role) =>
+        Nav.NavigateTo(role == TerminalRole.Caller ? "/caller" : "/receiver");
+}

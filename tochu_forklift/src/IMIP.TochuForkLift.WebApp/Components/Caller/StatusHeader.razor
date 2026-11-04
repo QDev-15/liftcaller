@@ -1,0 +1,48 @@
+@* Header + status row — ported from the prototype's caller screen (plan.md §6.3). *@
+
+<div class="kiosk-header">
+    <div class="kiosk-title">@Icons.Lift<span>Lift Call</span></div>
+    <span class="kiosk-clock">@Now.ToString("HH:mm:ss")</span>
+</div>
+<div class="kiosk-machine">Máy @UnitNo</div>
+
+<div class="status-row">
+    <div class="status-box">
+        <span class="status-label">Trạng thái Lift</span>
+        <span class="status-value">
+            <span class="dot @(LiftRunning ? "ok" : "bad")"></span>@(LiftRunning ? "Đang chạy" : "Đang dừng")
+        </span>
+    </div>
+    <div class="status-box">
+        <span class="status-label">Trạng thái phản hồi</span>
+        <span class="status-value">
+            <span class="dot @StatusDotClass"></span>@StatusText
+        </span>
+    </div>
+</div>
+
+@if (!LiftRunning)
+{
+    <div class="stopped-banner">@Icons.Warn<span>Lift đang dừng. Vẫn có thể gọi, nhưng thời gian chờ sẽ lâu hơn.</span></div>
+}
+
+@code {
+    [Parameter] public int UnitNo { get; set; }
+    [Parameter] public bool LiftRunning { get; set; }
+    [Parameter] public CallDto? ActiveCall { get; set; }
+    [Parameter] public DateTime Now { get; set; } = DateTime.Now;
+
+    private string StatusDotClass => ActiveCall switch
+    {
+        null => "idle",
+        { IsResponding: true } => "info",
+        _ => "warn"
+    };
+
+    private string StatusText => ActiveCall switch
+    {
+        null => "Chưa gọi",
+        { IsResponding: true } => "Đang phản hồi",
+        _ => "Đang gọi"
+    };
+}
