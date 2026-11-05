@@ -33,25 +33,20 @@ builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// WebApp runs as its own IIS site/port, so its browser calls to the Api (including the SignalR
-// hub negotiate request) are cross-origin. In Development anything is allowed for convenience;
-// in Production only the configured origins (Cors:AllowedOrigins) are allowed.
+// WebApp runs as its own IIS site/port, so its browser calls to the Api (including the SignalR hub
+// negotiate request) are cross-origin. Every device is on the same isolated factory LAN (plan.md
+// §8 — never exposed to the internet), so any origin is allowed in every environment rather than
+// maintaining a fixed port/IP allowlist. SetIsOriginAllowed (not AllowAnyOrigin) reflects the
+// specific request's Origin back instead of a literal "*", which is required to combine with
+// AllowCredentials() — the CORS spec forbids pairing a literal wildcard with credentials.
 const string CorsPolicy = "Default";
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(CorsPolicy, policy =>
-    {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.SetIsOriginAllowed(_ => true);
-        }
-        else
-        {
-            policy.WithOrigins(allowedOrigins);
-        }
-        policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-    });
+    options.AddPolicy(CorsPolicy, policy => policy
+        .SetIsOriginAllowed(_ => true)
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
 });
 
 var app = builder.Build();
