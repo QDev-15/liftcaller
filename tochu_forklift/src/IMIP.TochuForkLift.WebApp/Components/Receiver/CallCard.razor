@@ -1,4 +1,5 @@
 @* One queue/in-progress row — ported from the prototype's call-card (plan.md §6.3, §6.4). *@
+@inherits LocalizedComponentBase
 
 <div class="call-card @CardColorClass @(Overdue ? "overdue" : "")">
     @if (Order is not null)
@@ -7,24 +8,38 @@
     }
     <span class="card-icon">@TypeIcon</span>
     <div class="card-body">
-        <span class="card-machine">Máy @Call.UnitNo</span>
+        <span class="card-machine">@Loc.Format("MachineLabel", Call.UnitNo)</span>
         <span class="card-type">@TypeLabel</span>
     </div>
     <span class="card-elapsed">@FormatElapsed(ElapsedSince)</span>
 
     @if (ShowRespond)
     {
-        <button type="button" class="respond-btn" @onclick="() => OnRespond.InvokeAsync()">@Icons.Check<span>Phản hồi</span></button>
+        <button type="button" class="respond-btn" @onclick="() => OnRespond.InvokeAsync()">@Icons.Check<span>@Loc["RespondButton"]</span></button>
     }
     @if (ShowComplete)
     {
-        <button type="button" class="complete-btn" @onclick="() => OnComplete.InvokeAsync()">Hoàn thành</button>
+        <button type="button" class="complete-btn" @onclick="() => OnComplete.InvokeAsync()">@Loc["CompleteButton"]</button>
     }
     @if (ShowRelease)
     {
-        <button type="button" class="release-btn" @onclick="() => OnRelease.InvokeAsync()">Trả lại hàng đợi</button>
+        <button type="button" class="release-btn" @onclick="() => _confirmingRelease = true">@Loc["ReleaseButton"]</button>
     }
 </div>
+
+@if (_confirmingRelease)
+{
+    <div class="modal-backdrop" @onclick="() => _confirmingRelease = false">
+        <div class="modal-card" @onclick:stopPropagation="true">
+            <h3>@Loc["ConfirmReleaseTitle"]</h3>
+            <p>@Loc["ConfirmReleaseBody"]</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" @onclick="() => _confirmingRelease = false">@Loc["Close"]</button>
+                <button type="button" class="btn-solid danger" @onclick="ConfirmRelease">@Loc["ReleaseButton"]</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     [Parameter, EditorRequired] public CallDto Call { get; set; } = null!;
@@ -39,10 +54,19 @@
     [Parameter] public EventCallback OnComplete { get; set; }
     [Parameter] public EventCallback OnRelease { get; set; }
 
+    private bool _confirmingRelease;
+
+    private async Task ConfirmRelease()
+    {
+        _confirmingRelease = false;
+        await OnRelease.InvokeAsync();
+    }
+
     private DateTime ElapsedSince => InProgress ? (Call.RespondedAt ?? Call.CalledAt) : Call.CalledAt;
 
-    // In-progress cards always use the accent "progress" border regardless of call type (matches the prototype).
-    private string CardColorClass => InProgress ? "progress" : Call.CallType switch
+    // Color always reflects the call type, whether waiting or already being responded to — the
+    // "progress" accent border was dropped once Queue and In-progress merged into one list.
+    private string CardColorClass => Call.CallType switch
     {
         CallType.ProductPickup => "good",
         CallType.ReturnMaterial => "warn",
@@ -59,9 +83,9 @@
 
     private string TypeLabel => Call.CallType switch
     {
-        CallType.ProductPickup => "Lấy sản phẩm",
-        CallType.ReturnMaterial => "Lấy vật liệu trả về",
-        _ => "Sự cố"
+        CallType.ProductPickup => Loc["ProductPickup"],
+        CallType.ReturnMaterial => Loc["ReturnMaterial"],
+        _ => Loc["Trouble"]
     };
 
     private string FormatElapsed(DateTime since)

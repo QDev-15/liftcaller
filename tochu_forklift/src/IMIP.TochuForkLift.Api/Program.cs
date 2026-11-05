@@ -33,16 +33,25 @@ builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Dev-only CORS: WebApp/Admin run on separate ports during `dotnet run`. In production they're
-// reverse-proxied under the same IIS site as the Api, so no CORS is needed there (plan.md §8).
-const string DevCorsPolicy = "DevCors";
+// WebApp runs as its own IIS site/port, so its browser calls to the Api (including the SignalR
+// hub negotiate request) are cross-origin. In Development anything is allowed for convenience;
+// in Production only the configured origins (Cors:AllowedOrigins) are allowed.
+const string CorsPolicy = "Default";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(DevCorsPolicy, policy => policy
-        .SetIsOriginAllowed(_ => true)
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials());
+    options.AddPolicy(CorsPolicy, policy =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.SetIsOriginAllowed(_ => true);
+        }
+        else
+        {
+            policy.WithOrigins(allowedOrigins);
+        }
+        policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+    });
 });
 
 var app = builder.Build();
@@ -51,24 +60,31 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ForkLiftDbContext>();
-    // Migrations are authored against SQL Server (the only production provider). Api.Tests swaps in
-    // SQLite, which can't replay SqlServer-flavored migration SQL — it just builds the model directly.
-    if (db.Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer")
+    try
     {
-        db.Database.Migrate();
+        // Migrations are authored against SQL Server (the only production provider). Api.Tests swaps in
+        // SQLite, which can't replay SqlServer-flavored migration SQL — it just builds the model directly.
+        if (db.Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer")
+        {
+            db.Database.Migrate();
+        }
+        else
+        {
+            db.Database.EnsureCreated();
+        }
     }
-    else
+    catch (Exception ex)
     {
-        db.Database.EnsureCreated();
+        // A DB outage at boot shouldn't take the whole app down — /health and other non-DB
+        // endpoints should stay reachable, and calls that actually touch the DB fail on their own
+        // instead of the entire site returning IIS 500.30. Each later DB call retries independently.
+        Log.Error(ex, "Database migration/connectivity check failed at startup — continuing without it");
     }
 }
 
 // ---- Pipeline ----
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseCors(DevCorsPolicy);
-}
+app.UseCors(CorsPolicy);
 
 if (app.Configuration.GetValue("EnableSwagger", false) || app.Environment.IsDevelopment())
 {

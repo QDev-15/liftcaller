@@ -1,19 +1,20 @@
 @* 3 big call buttons — ported from the prototype's caller screen call-grid (plan.md §6.3). *@
+@inherits LocalizedComponentBase
 
 <div class="call-grid">
     <button type="button" class="call-btn good @StateClassFor(CallType.ProductPickup)"
             disabled="@IsDisabled(CallType.ProductPickup)" @onclick="() => Call(CallType.ProductPickup)">
-        <span class="call-icon">@Icons.Box</span><span>Lấy sản phẩm</span>
+        <span class="call-icon">@Icons.Box</span><span>@Loc["ProductPickup"]</span>
         @BadgeFor(CallType.ProductPickup)
     </button>
     <button type="button" class="call-btn warn @StateClassFor(CallType.ReturnMaterial)"
             disabled="@IsDisabled(CallType.ReturnMaterial)" @onclick="() => Call(CallType.ReturnMaterial)">
-        <span class="call-icon">@Icons.Return</span><span>Lấy vật liệu trả về</span>
+        <span class="call-icon">@Icons.Return</span><span>@Loc["ReturnMaterial"]</span>
         @BadgeFor(CallType.ReturnMaterial)
     </button>
     <button type="button" class="call-btn bad @StateClassFor(CallType.Trouble)"
             disabled="@IsDisabled(CallType.Trouble)" @onclick="() => Call(CallType.Trouble)">
-        <span class="call-icon">@Icons.Warn</span><span>Sự cố</span>
+        <span class="call-icon">@Icons.Warn</span><span>@Loc["Trouble"]</span>
         @BadgeFor(CallType.Trouble)
     </button>
 </div>
@@ -32,7 +33,7 @@
     private RenderFragment? BadgeFor(CallType type)
     {
         if (ActiveCall?.CallType != type) return null;
-        var text = ActiveCall.IsResponding ? "Đang phản hồi" : "Đang gọi...";
+        var text = ActiveCall.IsResponding ? Loc["CallBadgeResponding"] : Loc["CallBadgeCalling"];
         return @<span class="call-badge">@text</span>;
     }
 

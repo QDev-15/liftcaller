@@ -15,4 +15,6 @@ public record ApiResult(ApiCallOutcome Outcome, string? Message = null)
     public bool IsSuccess => Outcome == ApiCallOutcome.Success;
 }
 
-public record TerminalSaveResult(bool Success, Contracts.TerminalDto? Terminal, string? ErrorMessage = null);
+/// <summary>ErrorCode is a Shared.Localization.Strings key (not a literal message) — resolve it via
+/// the caller's own Localizer, e.g. Loc.Format(result.ErrorCode, result.ErrorArgs ?? []).</summary>
+public record TerminalSaveResult(bool Success, Contracts.TerminalDto? Terminal, string? ErrorCode = null, object?[]? ErrorArgs = null);

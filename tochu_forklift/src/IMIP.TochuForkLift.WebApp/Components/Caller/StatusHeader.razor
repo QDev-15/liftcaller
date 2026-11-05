@@ -1,20 +1,24 @@
 @* Header + status row — ported from the prototype's caller screen (plan.md §6.3). *@
+@inherits LocalizedComponentBase
 
 <div class="kiosk-header">
-    <div class="kiosk-title">@Icons.Lift<span>Lift Call</span></div>
-    <span class="kiosk-clock">@Now.ToString("HH:mm:ss")</span>
+    <div class="kiosk-title">@Icons.Lift<span>@Loc["AppTitle"]</span></div>
+    <div class="kiosk-header-right">
+        <LanguageSwitcher />
+        <span class="kiosk-clock">@Now.ToString("HH:mm:ss")</span>
+    </div>
 </div>
-<div class="kiosk-machine">Máy @UnitNo</div>
+<div class="kiosk-machine">@Loc.Format("MachineLabel", UnitNo)</div>
 
 <div class="status-row">
     <div class="status-box">
-        <span class="status-label">Trạng thái Lift</span>
+        <span class="status-label">@Loc["LiftStatusLabel"]</span>
         <span class="status-value">
-            <span class="dot @(LiftRunning ? "ok" : "bad")"></span>@(LiftRunning ? "Đang chạy" : "Đang dừng")
+            <span class="dot @(LiftRunning ? "ok" : "bad")"></span>@(LiftRunning ? Loc["Running"] : Loc["Stopped"])
         </span>
     </div>
     <div class="status-box">
-        <span class="status-label">Trạng thái phản hồi</span>
+        <span class="status-label">@Loc["ResponseStatusLabel"]</span>
         <span class="status-value">
             <span class="dot @StatusDotClass"></span>@StatusText
         </span>
@@ -23,7 +27,7 @@
 
 @if (!LiftRunning)
 {
-    <div class="stopped-banner">@Icons.Warn<span>Lift đang dừng. Vẫn có thể gọi, nhưng thời gian chờ sẽ lâu hơn.</span></div>
+    <div class="stopped-banner">@Icons.Warn<span>@Loc["StoppedBanner"]</span></div>
 }
 
 @code {
@@ -41,8 +45,8 @@
 
     private string StatusText => ActiveCall switch
     {
-        null => "Chưa gọi",
-        { IsResponding: true } => "Đang phản hồi",
-        _ => "Đang gọi"
+        null => Loc["Idle"],
+        { IsResponding: true } => Loc["Responding"],
+        _ => Loc["Calling"]
     };
 }

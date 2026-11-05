@@ -71,6 +71,12 @@ main{flex:1;}
 h1{font-size:1.5rem; margin:0 0 1rem;}
 h2{font-size:1.15rem;}
 
+/* ---- language switcher ---- */
+.lang-switcher{display:flex; gap:2px; background:var(--surface-2); border:1px solid var(--line); border-radius:999px; padding:3px;}
+.lang-btn{display:inline-flex; align-items:center; background:transparent; border:none; color:var(--muted); border-radius:999px; padding:5px 9px; font-size:0.68rem; font-weight:700; font-family:var(--font-mono); letter-spacing:.02em; cursor:pointer; text-decoration:none;}
+.lang-btn.active{background:var(--accent); color:#06101f;}
+.lang-btn:not(.active):hover{color:var(--ink);}
+
 /* ---- theme toggle ---- */
 /* The icon shown is the theme a click switches TO (sun while dark, moon while light) — pure CSS,
    driven by the data-theme attribute set on <html>, no script/Blazor state needed to pick it. */
@@ -150,7 +156,8 @@ h2{font-size:1.15rem;}
 .modal-actions{display:flex; justify-content:flex-end; gap:10px;}
 
 /* ---- login ---- */
-.login-page{min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg);}
+.login-page{position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg);}
+.login-lang-switcher{position:absolute; top:20px; right:20px;}
 .login-card{width:min(380px,100%); background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:30px; display:flex; flex-direction:column; gap:16px;}
 .login-brand{display:flex; align-items:center; justify-content:center; gap:10px; font-family:var(--font-display); font-size:1.3rem; text-transform:uppercase; letter-spacing:.03em; margin-bottom:4px;}
 .login-brand svg{width:26px; height:26px; color:var(--accent);}
@@ -159,6 +166,6 @@ h2{font-size:1.15rem;}
 #blazor-error-ui{color-scheme:light only; background:lightyellow; bottom:0; box-shadow:0 -1px 2px rgba(0,0,0,0.2); box-sizing:border-box; display:none; left:0; padding:0.6rem 1.25rem 0.7rem; position:fixed; width:100%; z-index:1000;}
 #blazor-error-ui .dismiss{cursor:pointer; position:absolute; right:0.75rem; top:0.5rem;}
 .blazor-error-boundary{background:#b32121; padding:1rem; color:#fff; border-radius:8px;}
-.blazor-error-boundary::after{content:"Đã xảy ra lỗi.";}
+.blazor-error-boundary::after{content:"An error occurred.";}
 .validation-message{color:var(--bad); font-size:0.84rem;}
 .text-danger{color:var(--bad);}

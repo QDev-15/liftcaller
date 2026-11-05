@@ -36,6 +36,12 @@ public partial class TerminalAuthService(ForkLiftDbContext db, ILogger<TerminalA
         };
     }
 
+    public async Task<TerminalDto?> ValidateAsync(int terminalId, CancellationToken ct = default)
+    {
+        var terminal = await db.Terminals.AsNoTracking().SingleOrDefaultAsync(t => t.Id == terminalId && t.IsActive, ct);
+        return terminal is null ? null : ToDto(terminal);
+    }
+
     public async Task<List<TerminalSuggestionDto>> GetSuggestionsAsync(CancellationToken ct = default)
     {
         return await db.Terminals
@@ -59,20 +65,20 @@ public partial class TerminalAuthService(ForkLiftDbContext db, ILogger<TerminalA
     {
         var name = request.Name.Trim();
         if (string.IsNullOrWhiteSpace(name))
-            return TerminalOperationResult.Fail("Tên không được để trống.");
+            return TerminalOperationResult.Fail("ErrorNameRequired");
 
         if (!PinFormatRegex().IsMatch(request.Pin))
-            return TerminalOperationResult.Fail("PIN phải gồm đúng 4 chữ số.");
+            return TerminalOperationResult.Fail("ErrorInvalidPin");
 
         if (request.Role == TerminalRole.Caller && request.UnitNo is null)
-            return TerminalOperationResult.Fail("Caller phải có số máy (UnitNo).");
+            return TerminalOperationResult.Fail("ErrorCallerRequiresUnitNo");
 
         if (await db.Terminals.AnyAsync(t => t.Name == name, ct))
-            return TerminalOperationResult.Fail($"Tên \"{name}\" đã được dùng.");
+            return TerminalOperationResult.Fail("ErrorDuplicateName", name);
 
         if (request.Role == TerminalRole.Caller &&
             await db.Terminals.AnyAsync(t => t.UnitNo == request.UnitNo && t.Role == (byte)TerminalRole.Caller && t.IsActive, ct))
-            return TerminalOperationResult.Fail($"Số máy {request.UnitNo} đã được gán cho 1 Caller đang active khác.");
+            return TerminalOperationResult.Fail("ErrorUnitNoAssigned", request.UnitNo);
 
         var terminal = new Terminal
         {
@@ -93,26 +99,26 @@ public partial class TerminalAuthService(ForkLiftDbContext db, ILogger<TerminalA
     public async Task<TerminalOperationResult> UpdateTerminalAsync(int id, UpdateTerminalRequest request, CancellationToken ct = default)
     {
         var terminal = await db.Terminals.SingleOrDefaultAsync(t => t.Id == id, ct);
-        if (terminal is null) return TerminalOperationResult.Fail("Không tìm thấy Terminal.");
+        if (terminal is null) return TerminalOperationResult.Fail("ErrorTerminalNotFound");
 
         var name = request.Name.Trim();
         if (string.IsNullOrWhiteSpace(name))
-            return TerminalOperationResult.Fail("Tên không được để trống.");
+            return TerminalOperationResult.Fail("ErrorNameRequired");
 
         if (terminal.Role == (byte)TerminalRole.Caller && request.UnitNo is null)
-            return TerminalOperationResult.Fail("Caller phải có số máy (UnitNo).");
+            return TerminalOperationResult.Fail("ErrorCallerRequiresUnitNo");
 
         if (await db.Terminals.AnyAsync(t => t.Id != id && t.Name == name, ct))
-            return TerminalOperationResult.Fail($"Tên \"{name}\" đã được dùng.");
+            return TerminalOperationResult.Fail("ErrorDuplicateName", name);
 
         if (terminal.Role == (byte)TerminalRole.Caller && request.IsActive &&
             await db.Terminals.AnyAsync(t => t.Id != id && t.UnitNo == request.UnitNo && t.Role == (byte)TerminalRole.Caller && t.IsActive, ct))
-            return TerminalOperationResult.Fail($"Số máy {request.UnitNo} đã được gán cho 1 Caller đang active khác.");
+            return TerminalOperationResult.Fail("ErrorUnitNoAssigned", request.UnitNo);
 
         if (!string.IsNullOrEmpty(request.NewPin))
         {
             if (!PinFormatRegex().IsMatch(request.NewPin))
-                return TerminalOperationResult.Fail("PIN phải gồm đúng 4 chữ số.");
+                return TerminalOperationResult.Fail("ErrorInvalidPin");
             terminal.PinHash = BCrypt.Net.BCrypt.HashPassword(request.NewPin);
         }
 

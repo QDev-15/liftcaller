@@ -8,7 +8,7 @@ namespace IMIP.TochuForkLift.WebApp.Services;
 /// Persists the logged-in Terminal's identity in the browser's localStorage so a tablet only
 /// needs to log in once — plan.md §4.3.
 /// </summary>
-public class AuthStateService(IJSRuntime js)
+public class AuthStateService(IJSRuntime js, ForkLiftApiClient api)
 {
     private const string StorageKey = "forklift.terminalIdentity";
 
@@ -31,5 +31,32 @@ public class AuthStateService(IJSRuntime js)
     {
         Current = null;
         await js.InvokeVoidAsync("localStorage.removeItem", StorageKey);
+    }
+
+    /// <summary>
+    /// Checks the cached identity against the server — if Admin deleted or deactivated this terminal,
+    /// the API confirms it's gone (404) and this clears the cached identity so the caller can redirect
+    /// to Login, instead of the tablet silently going on acting as a terminal that no longer exists.
+    /// A network/server error is NOT treated as invalid — only a confirmed "no such active terminal"
+    /// is, so a dropped Wi-Fi connection never logs the tablet out by itself.
+    /// </summary>
+    public async Task<bool> ValidateAsync(CancellationToken ct = default)
+    {
+        if (Current is null) return false;
+
+        try
+        {
+            var terminal = await api.ValidateTerminalAsync(Current.TerminalId, ct);
+            if (terminal is null)
+            {
+                await ClearAsync();
+                return false;
+            }
+            return true;
+        }
+        catch
+        {
+            return true;
+        }
     }
 }

@@ -101,6 +101,17 @@ public class ForkLiftApiClient : IAsyncDisposable
         return result ?? [];
     }
 
+    /// <summary>Null means the terminal is gone/deactivated — NotFound is the one "this identity is
+    /// no longer valid" signal; any other failure (network, server down) is NOT treated as invalid,
+    /// since losing Wi-Fi for a moment shouldn't log the tablet out.</summary>
+    public async Task<TerminalDto?> ValidateTerminalAsync(int terminalId, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync($"api/auth/validate/{terminalId}", ct);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TerminalDto>(ct);
+    }
+
     // ---- Admin: Terminal management ----
 
     public async Task<List<TerminalDto>> GetTerminalsAsync(CancellationToken ct = default)
@@ -117,7 +128,8 @@ public class ForkLiftApiClient : IAsyncDisposable
             var terminal = await response.Content.ReadFromJsonAsync<TerminalDto>(ct);
             return new TerminalSaveResult(true, terminal);
         }
-        return new TerminalSaveResult(false, null, await TryReadErrorMessageAsync(response, ct) ?? $"HTTP {(int)response.StatusCode}");
+        var (code, args) = await TryReadTerminalErrorAsync(response, ct);
+        return new TerminalSaveResult(false, null, code, args);
     }
 
     public async Task<TerminalSaveResult> UpdateTerminalAsync(int id, UpdateTerminalRequest request, CancellationToken ct = default)
@@ -128,7 +140,8 @@ public class ForkLiftApiClient : IAsyncDisposable
             var terminal = await response.Content.ReadFromJsonAsync<TerminalDto>(ct);
             return new TerminalSaveResult(true, terminal);
         }
-        return new TerminalSaveResult(false, null, await TryReadErrorMessageAsync(response, ct) ?? $"HTTP {(int)response.StatusCode}");
+        var (code, args) = await TryReadTerminalErrorAsync(response, ct);
+        return new TerminalSaveResult(false, null, code, args);
     }
 
     // ---- SignalR hub ----
@@ -230,6 +243,24 @@ public class ForkLiftApiClient : IAsyncDisposable
             return null;
         }
     }
+
+    /// <summary>Terminal endpoints return {code, args} (a Strings key + format args), not a literal
+    /// message — see TerminalOperationResult. Args deserialize as JsonElement, but JsonElement's own
+    /// ToString() already yields the right text for string.Format (unquoted string, plain number).</summary>
+    private static async Task<(string? Code, object?[]? Args)> TryReadTerminalErrorAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        try
+        {
+            var body = await response.Content.ReadFromJsonAsync<TerminalErrorBody>(ct);
+            return (body?.Code, body?.Args);
+        }
+        catch
+        {
+            return (null, null);
+        }
+    }
+
+    private record TerminalErrorBody(string? Code, object?[]? Args);
 
     private record ErrorBody(string? Message);
 

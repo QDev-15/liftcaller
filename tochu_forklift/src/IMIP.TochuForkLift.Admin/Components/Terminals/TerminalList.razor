@@ -1,14 +1,15 @@
 @* Table of Caller/Receiver terminals — plan.md §4.4. *@
+@inject Localizer Loc
 
 <div class="table-wrap">
     <table class="admin-table">
         <thead>
-            <tr><th>Tên</th><th>Vai trò</th><th>Số máy</th><th>Trạng thái</th><th></th></tr>
+            <tr><th>@Loc["ColName"]</th><th>@Loc["ColRole"]</th><th>@Loc["ColUnitNo"]</th><th>@Loc["ColStatus"]</th><th></th></tr>
         </thead>
         <tbody>
             @if (Terminals.Count == 0)
             {
-                <tr><td colspan="5" style="text-align:center; color:var(--muted);">Chưa có Terminal nào.</td></tr>
+                <tr><td colspan="5" style="text-align:center; color:var(--muted);">@Loc["NoTerminals"]</td></tr>
             }
             else
             {
@@ -16,19 +17,19 @@
                 {
                     <tr>
                         <td>@t.Name</td>
-                        <td>@(t.Role == TerminalRole.Caller ? "Caller" : "Receiver")</td>
+                        <td>@(t.Role == TerminalRole.Caller ? Loc["RoleCaller"] : Loc["RoleReceiver"])</td>
                         <td class="mono">@(t.UnitNo?.ToString() ?? "—")</td>
                         <td>
                             @if (t.IsActive)
                             {
-                                <span class="status-chip on">Active</span>
+                                <span class="status-chip on">@Loc["Active"]</span>
                             }
                             else
                             {
-                                <span class="status-chip off">Inactive</span>
+                                <span class="status-chip off">@Loc["Inactive"]</span>
                             }
                         </td>
-                        <td><button type="button" class="btn btn-sm" @onclick="() => OnEdit.InvokeAsync(t)">Sửa</button></td>
+                        <td><button type="button" class="btn btn-sm" @onclick="() => OnEdit.InvokeAsync(t)">@Loc["Edit"]</button></td>
                     </tr>
                 }
             }

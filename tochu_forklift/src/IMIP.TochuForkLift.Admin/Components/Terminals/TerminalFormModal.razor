@@ -1,24 +1,25 @@
 @* Create/edit a Terminal — PIN is entered by the Admin, defaulted to "0000" (plan.md §5.1). *@
 @inject ForkLiftApiClient Api
+@inject Localizer Loc
 
 @if (Show)
 {
     <div class="modal-backdrop">
         <div class="modal-card">
-            <h2>@(_editingId is null ? "Tạo Terminal mới" : "Sửa Terminal")</h2>
+            <h2>@(_editingId is null ? Loc["CreateTerminalTitle"] : Loc["EditTerminalTitle"])</h2>
 
             <div class="form-row">
-                <label class="form-label">Tên</label>
+                <label class="form-label">@Loc["ColName"]</label>
                 <input class="form-control" @bind="_name" />
             </div>
 
             @if (_editingId is null)
             {
                 <div class="form-row">
-                    <label class="form-label">Vai trò</label>
+                    <label class="form-label">@Loc["ColRole"]</label>
                     <select class="form-control" @bind="_role">
-                        <option value="@TerminalRole.Caller">Caller</option>
-                        <option value="@TerminalRole.Receiver">Receiver</option>
+                        <option value="@TerminalRole.Caller">@Loc["RoleCaller"]</option>
+                        <option value="@TerminalRole.Receiver">@Loc["RoleReceiver"]</option>
                     </select>
                 </div>
             }
@@ -26,20 +27,20 @@
             @if (_role == TerminalRole.Caller)
             {
                 <div class="form-row">
-                    <label class="form-label">Số máy (UnitNo)</label>
+                    <label class="form-label">@Loc["UnitNoLabel"]</label>
                     <input class="form-control" type="number" @bind="_unitNo" />
                 </div>
             }
 
             <div class="form-row">
-                <label class="form-label">@(_editingId is null ? "Mã PIN (4 số)" : "Đổi mã PIN (bỏ trống nếu giữ nguyên)")</label>
+                <label class="form-label">@(_editingId is null ? Loc["PinLabel"] : Loc["NewPinLabel"])</label>
                 <input class="form-control" maxlength="4" @bind="_pin" placeholder="0000" />
             </div>
 
             @if (_editingId is not null)
             {
                 <div class="form-row">
-                    <label class="form-label"><input type="checkbox" @bind="_isActive" /> Active</label>
+                    <label class="form-label"><input type="checkbox" @bind="_isActive" /> @Loc["Active"]</label>
                 </div>
             }
 
@@ -49,8 +50,8 @@
             }
 
             <div class="modal-actions">
-                <button type="button" class="btn" @onclick="Cancel">Đóng</button>
-                <button type="button" class="btn btn-primary" @onclick="Save">Lưu</button>
+                <button type="button" class="btn" @onclick="Cancel">@Loc["Close"]</button>
+                <button type="button" class="btn btn-primary" @onclick="Save">@Loc["Save"]</button>
             </div>
         </div>
     </div>
@@ -104,7 +105,7 @@
                 UnitNo = _role == TerminalRole.Caller ? _unitNo : null,
                 Pin = string.IsNullOrWhiteSpace(_pin) ? "0000" : _pin
             });
-            if (!result.Success) { _error = result.ErrorMessage ?? "Không thể tạo Terminal."; return; }
+            if (!result.Success) { _error = result.ErrorCode is not null ? Loc.Format(result.ErrorCode, result.ErrorArgs ?? []) : Loc["CannotCreateTerminal"]; return; }
             await OnSaved.InvokeAsync();
         }
         else
@@ -116,7 +117,7 @@
                 IsActive = _isActive,
                 NewPin = string.IsNullOrWhiteSpace(_pin) ? null : _pin
             });
-            if (!result.Success) { _error = result.ErrorMessage ?? "Không thể lưu."; return; }
+            if (!result.Success) { _error = result.ErrorCode is not null ? Loc.Format(result.ErrorCode, result.ErrorArgs ?? []) : Loc["CannotSaveTerminal"]; return; }
             await OnSaved.InvokeAsync();
         }
     }

@@ -22,5 +22,14 @@ public static class AuthEndpoints
             return Results.Ok(suggestions);
         })
         .WithName("GetLoginSuggestions");
+
+        // Lets a cached client identity (WebApp localStorage) notice it's been deactivated/deleted
+        // from Admin and log itself out, instead of sitting there silently calling as a ghost terminal.
+        group.MapGet("/validate/{id:int}", async (int id, ITerminalAuthService service, CancellationToken ct) =>
+        {
+            var terminal = await service.ValidateAsync(id, ct);
+            return terminal is not null ? Results.Ok(terminal) : Results.NotFound();
+        })
+        .WithName("ValidateTerminal");
     }
 }

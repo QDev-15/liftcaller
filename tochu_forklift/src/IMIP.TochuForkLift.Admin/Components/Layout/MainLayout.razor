@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject Localizer Loc
 
 <div class="page">
     <div class="sidebar">
@@ -8,10 +10,24 @@
     <main>
         <div class="top-row">
             <div class="top-row-right">
-                @* Plain onclick (not @onclick): MainLayout isn't inside an interactive render
-                   boundary — see the logout form below for the same reason — so this toggles the
+                @* Plain <a> links (not @onclick): MainLayout isn't inside an interactive render
+                   boundary — see the logout form below for the same reason — so switching language
+                   is a real navigation to /account/language, which sets a cookie and redirects back.
+                   data-enhance-nav="false" forces an actual browser navigation instead of Blazor's
+                   enhanced navigation reusing the existing circuit — otherwise an already-open
+                   interactive page (Dashboard etc.) keeps its original Localizer instance, captured
+                   once when that circuit started, and never picks up the new cookie. *@
+                <div class="lang-switcher">
+                    @foreach (var lang in Languages)
+                    {
+                        <a class="lang-btn @(Loc.Language == lang ? "active" : "")" data-enhance-nav="false"
+                           href="@($"/account/language?lang={lang.ToCode()}&returnUrl={Uri.EscapeDataString(Nav.ToBaseRelativePath(Nav.Uri))}")">@lang.ToCode().ToUpperInvariant()</a>
+                    }
+                </div>
+
+                @* Plain onclick (not @onclick): same non-interactive-layout reasoning — toggles the
                    theme via a normal DOM event, not a Blazor circuit. *@
-                <button type="button" class="theme-toggle" title="Đổi giao diện sáng/tối"
+                <button type="button" class="theme-toggle" title="@Loc["ToggleTheme"]"
                         onclick="window.adminTheme.toggle()">
                     <span class="icon-sun">@Icons.Sun</span>
                     <span class="icon-moon">@Icons.Moon</span>
@@ -20,7 +36,7 @@
                     <Authorized>
                         <span class="top-row-user">@context.User.Identity?.Name</span>
                         <form method="post" action="/account/logout">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">Đăng xuất</button>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">@Loc["AdminLogoutButton"]</button>
                         </form>
                     </Authorized>
                 </AuthorizeView>
@@ -32,6 +48,10 @@
         </article>
     </main>
 </div>
+
+@code {
+    private static readonly AppLanguage[] Languages = [AppLanguage.En, AppLanguage.Ja];
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

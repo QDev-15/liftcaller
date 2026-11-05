@@ -2,6 +2,7 @@ using System.Security.Claims;
 using IMIP.TochuForkLift.Admin.Components;
 using IMIP.TochuForkLift.Admin.Services;
 using IMIP.TochuForkLift.Shared.Client;
+using IMIP.TochuForkLift.Shared.Localization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -31,6 +32,18 @@ var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7016/
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 builder.Services.AddScoped<ForkLiftApiClient>();
 builder.Services.AddScoped<AdminStateSyncService>();
+
+// Language: a cookie (not localStorage) because Blazor Server needs it at render time, before any
+// JS can run — same reasoning as cookie-based auth here. Read once per circuit from the request
+// that started it; a plain GET below sets/updates the cookie and reloads.
+builder.Services.AddHttpContextAccessor();
+var defaultLanguage = AppLanguageExtensions.ParseCode(builder.Configuration["Localization:DefaultLanguage"]);
+builder.Services.AddScoped(sp =>
+{
+    var http = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
+    var cookie = http?.Request.Cookies["admin.lang"];
+    return new Localizer(cookie is null ? defaultLanguage : AppLanguageExtensions.ParseCode(cookie));
+});
 
 var app = builder.Build();
 
@@ -72,6 +85,19 @@ app.MapPost("/account/logout", async (HttpContext http) =>
 {
     await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     return Results.Redirect("/login");
+});
+
+// Plain GET + redirect (not a Blazor event) so the new language is set before the next render,
+// matching the cookie-at-render-time constraint noted above.
+app.MapGet("/account/language", (HttpContext http, string lang, string? returnUrl) =>
+{
+    http.Response.Cookies.Append("admin.lang", AppLanguageExtensions.ParseCode(lang).ToCode(), new CookieOptions
+    {
+        Expires = DateTimeOffset.UtcNow.AddYears(1),
+        HttpOnly = false,
+        SameSite = SameSiteMode.Lax
+    });
+    return Results.Redirect(string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);
 });
 
 app.MapStaticAssets();

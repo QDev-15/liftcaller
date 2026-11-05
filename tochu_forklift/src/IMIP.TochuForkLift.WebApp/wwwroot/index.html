@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="ja">
 
 <head>
     <meta charset="utf-8" />
@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="css/app.css" />
     <link href="IMIP.TochuForkLift.WebApp.styles.css" rel="stylesheet" />
     <script type="importmap"></script>
+    <!-- Cosmetic only (the <html> lang attribute) — the actual UI text is chosen by Program.cs/Localizer
+         after the WASM runtime boots; this just avoids the tag briefly disagreeing with it. -->
+    <script>(function(){try{var l=localStorage.getItem("forklift.language");if(l)document.documentElement.setAttribute("lang",l);}catch(e){}})();</script>
 </head>
 
 <body>

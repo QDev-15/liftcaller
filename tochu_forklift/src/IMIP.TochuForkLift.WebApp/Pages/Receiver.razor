@@ -6,24 +6,30 @@
 @inject ForkLiftApiClient Api
 @inject AlertSoundService Sound
 @inject NavigationManager Nav
+@inject Localizer Loc
 
 @if (_identity is not null)
 {
     <div class="kiosk-page">
         <div class="kiosk-header">
-            <div class="kiosk-title">@Icons.Lift<span>Lift Call — @_identity.Name</span></div>
-            <span class="kiosk-clock">@_now.ToString("HH:mm:ss")</span>
+            <div class="kiosk-title">@Icons.Lift<span>@Loc["AppTitle"] — @_identity.Name</span></div>
+            <div class="kiosk-header-right">
+                <LanguageSwitcher />
+                <span class="kiosk-clock">@_now.ToString("HH:mm:ss")</span>
+            </div>
         </div>
 
         <LiftToggle IsRunning="@Sync.Snapshot.LiftState.IsRunning" OnToggle="OnLiftToggle" />
 
-        <CallQueue Calls="@QueueCalls" Now="@_now" OnRespond="OnRespond" />
-        <InProgressList Calls="@InProgressCalls" Now="@_now" OnComplete="OnComplete" OnRelease="OnRelease" />
-
-        <button type="button" class="kiosk-change-device" @onclick="ChangeDevice">Đổi máy</button>
+        <CallList Calls="@VisibleCalls" Now="@_now" IsLiftRunning="@Sync.Snapshot.LiftState.IsRunning"
+                  OnRespond="OnRespond" OnComplete="OnComplete" OnRelease="OnRelease" />
 
         <Toast Message="@_toast" />
         <ConnectionErrorOverlay Visible="@(!IsConnected)" />
+
+        <div class="kiosk-footer">
+            <button type="button" class="kiosk-change-device" @onclick="ChangeDevice">@Loc["ChangeDevice"]</button>
+        </div>
     </div>
 }
 
@@ -33,16 +39,20 @@
     private DateTime _now = DateTime.UtcNow;
     private PeriodicTimer? _clock;
     private Task? _clockLoop;
+    private PeriodicTimer? _validityTimer;
+    private Task? _validityLoop;
 
     // Optimistic client-side hide while waiting for the next snapshot after losing a claim race (plan.md §6.4).
     private readonly HashSet<int> _locallyHidden = [];
 
-    private List<CallDto> QueueCalls => Sync.Snapshot.Calls
-        .Where(c => !c.IsResponding && !_locallyHidden.Contains(c.UnitNo))
-        .ToList();
-
-    private List<CallDto> InProgressCalls => Sync.Snapshot.Calls
-        .Where(c => c.IsResponding && c.RespondedBy == _identity?.Name)
+    // A call claimed by another Receiver is simply absent here, not shown disabled (plan.md §6.4).
+    // Order: Responding calls before waiting ones; within each group, Trouble first, then FIFO —
+    // by RespondedAt (claim order) for the Responding group, by CalledAt (arrival order) for Waiting.
+    private List<CallDto> VisibleCalls => Sync.Snapshot.Calls
+        .Where(c => (!c.IsResponding || c.RespondedBy == _identity?.Name) && !_locallyHidden.Contains(c.UnitNo))
+        .OrderByDescending(c => c.IsResponding)
+        .ThenByDescending(c => c.CallType == CallType.Trouble)
+        .ThenBy(c => c.IsResponding ? (c.RespondedAt ?? c.CalledAt) : c.CalledAt)
         .ToList();
 
     private bool IsConnected => Sync.ConnectionState is Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected;
@@ -57,12 +67,22 @@
         }
         _identity = Auth.Current;
 
+        if (!await Auth.ValidateAsync())
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+
         await Sync.InitializeAsync();
         Sync.Updated += OnSyncUpdated;
         Sync.ConnectionStateChanged += OnSyncUpdated;
+        Loc.LanguageChanged += OnLanguageChanged;
 
         _clock = new PeriodicTimer(TimeSpan.FromSeconds(1));
         _clockLoop = ClockLoopAsync();
+
+        _validityTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        _validityLoop = ValidityLoopAsync();
     }
 
     private async Task ClockLoopAsync()
@@ -78,6 +98,24 @@
         catch (ObjectDisposedException) { }
     }
 
+    // Catches Admin deleting/deactivating this terminal while the tablet is already sitting on this
+    // screen — without this, a stale cached identity would just keep working silently forever.
+    private async Task ValidityLoopAsync()
+    {
+        try
+        {
+            while (await _validityTimer!.WaitForNextTickAsync())
+            {
+                if (!await Auth.ValidateAsync())
+                {
+                    Nav.NavigateTo("/", forceLoad: true);
+                    return;
+                }
+            }
+        }
+        catch (ObjectDisposedException) { }
+    }
+
     private void OnSyncUpdated()
     {
         // Snapshot is authoritative again — drop any optimistic hides from the last claim race.
@@ -85,25 +123,32 @@
         InvokeAsync(StateHasChanged);
     }
 
+    private void OnLanguageChanged() => InvokeAsync(StateHasChanged);
+
+    // Buttons that trigger these are hidden while the lift is stopped, but guard here too in case a
+    // tap lands right as the lift state flips (plan.md §6.4 + operator request: no action while stopped).
+    private bool CanAct => Sync.Snapshot.LiftState.IsRunning;
+
     private async Task OnRespond(int unitNo)
     {
-        if (_identity is null) return;
+        if (_identity is null || !CanAct) return;
         var result = await Api.SetRespondingAsync(unitNo, new SetRespondingRequest { IsResponding = true, RespondedBy = _identity.Name });
         if (result.Outcome == ApiCallOutcome.Conflict)
         {
             _locallyHidden.Add(unitNo);
-            await ShowToastAsync("Yêu cầu đã được tiếp nhận");
+            await ShowToastAsync(Loc["ToastRespondConflict"]);
         }
     }
 
     private async Task OnComplete(int unitNo)
     {
-        if (_identity is null) return;
+        if (_identity is null || !CanAct) return;
         await Api.CompleteCallAsync(unitNo, new CompleteCallRequest { CompletedBy = _identity.Name });
     }
 
     private async Task OnRelease(int unitNo)
     {
+        if (!CanAct) return;
         await Api.SetRespondingAsync(unitNo, new SetRespondingRequest { IsResponding = false });
     }
 
@@ -132,7 +177,10 @@
     {
         Sync.Updated -= OnSyncUpdated;
         Sync.ConnectionStateChanged -= OnSyncUpdated;
+        Loc.LanguageChanged -= OnLanguageChanged;
         _clock?.Dispose();
         if (_clockLoop is not null) { try { await _clockLoop; } catch { } }
+        _validityTimer?.Dispose();
+        if (_validityLoop is not null) { try { await _validityLoop; } catch { } }
     }
 }

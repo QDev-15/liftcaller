@@ -1,18 +1,19 @@
 @* Cancel Call — confirms first if the lift is already responding, to match the original proposal's requirement. *@
+@inherits LocalizedComponentBase
 
 <button type="button" class="cancel-btn" disabled="@(ActiveCall is null)" @onclick="RequestCancel">
-    @Icons.X<span>Hủy gọi</span>
+    @Icons.X<span>@Loc["CancelCall"]</span>
 </button>
 
 @if (_confirming)
 {
     <div class="modal-backdrop" @onclick="() => _confirming = false">
         <div class="modal-card" @onclick:stopPropagation="true">
-            <h3>Hủy cuộc gọi?</h3>
-            <p>Lift đang phản hồi cuộc gọi này. Hủy ngay bây giờ sẽ dừng việc xử lý.</p>
+            <h3>@Loc["ConfirmCancelTitle"]</h3>
+            <p>@Loc["ConfirmCancelBody"]</p>
             <div class="modal-actions">
-                <button type="button" class="btn-ghost" @onclick="() => _confirming = false">Đóng</button>
-                <button type="button" class="btn-solid danger" @onclick="ConfirmCancel">Hủy gọi</button>
+                <button type="button" class="btn-ghost" @onclick="() => _confirming = false">@Loc["Close"]</button>
+                <button type="button" class="btn-solid danger" @onclick="ConfirmCancel">@Loc["CancelCall"]</button>
             </div>
         </div>
     </div>

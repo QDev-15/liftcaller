@@ -1,12 +1,13 @@
 @* Shared between Caller and Receiver — plan.md §4.3. Shown while the SignalR hub is disconnected. *@
+@inherits LocalizedComponentBase
 
 @if (Visible)
 {
     <div class="overlay">
         <div class="overlay-icon">@Icons.Warn</div>
-        <p class="overlay-title">Lỗi kết nối</p>
-        <p class="overlay-text">Mất kết nối tới máy chủ.</p>
-        <p class="overlay-hint">Nút bấm đã bị khoá để tránh nhầm lẫn cuộc gọi đã được gửi.</p>
+        <p class="overlay-title">@Loc["ConnectionErrorTitle"]</p>
+        <p class="overlay-text">@Loc["ConnectionErrorText"]</p>
+        <p class="overlay-hint">@Loc["ConnectionErrorHint"]</p>
     </div>
 }
 

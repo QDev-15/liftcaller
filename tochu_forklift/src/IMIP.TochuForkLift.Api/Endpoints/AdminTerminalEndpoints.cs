@@ -21,14 +21,14 @@ public static class AdminTerminalEndpoints
         group.MapPost("/", async (CreateTerminalRequest request, ITerminalAuthService service, CancellationToken ct) =>
         {
             var result = await service.CreateTerminalAsync(request, ct);
-            return result.Success ? Results.Created($"/api/admin/terminals/{result.Terminal!.Id}", result.Terminal) : Results.BadRequest(new { message = result.ErrorMessage });
+            return result.Success ? Results.Created($"/api/admin/terminals/{result.Terminal!.Id}", result.Terminal) : Results.BadRequest(new { code = result.ErrorCode, args = result.ErrorArgs });
         })
         .WithName("CreateTerminal");
 
         group.MapPut("/{id:int}", async (int id, UpdateTerminalRequest request, ITerminalAuthService service, CancellationToken ct) =>
         {
             var result = await service.UpdateTerminalAsync(id, request, ct);
-            return result.Success ? Results.Ok(result.Terminal) : Results.BadRequest(new { message = result.ErrorMessage });
+            return result.Success ? Results.Ok(result.Terminal) : Results.BadRequest(new { code = result.ErrorCode, args = result.ErrorArgs });
         })
         .WithName("UpdateTerminal");
     }

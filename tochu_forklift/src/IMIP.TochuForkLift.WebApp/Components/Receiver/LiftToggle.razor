@@ -1,19 +1,20 @@
 @* Running ⇄ Stopped — confirms before switching, matching the original proposal's "long-press/confirm to avoid mis-taps". *@
+@inherits LocalizedComponentBase
 
 <button type="button" class="lift-toggle @(IsRunning ? "running" : "stopped")" @onclick="RequestToggle">
-    @Icons.Power<span>@(IsRunning ? "Đang chạy" : "Đang dừng")</span>
-    <span class="lift-toggle-hint">Nhấn để @(IsRunning ? "dừng" : "chạy lại")</span>
+    @Icons.Power<span>@(IsRunning ? Loc["Running"] : Loc["Stopped"])</span>
+    <span class="lift-toggle-hint">@(IsRunning ? Loc["LiftToggleRunningHint"] : Loc["LiftToggleStoppedHint"])</span>
 </button>
 
 @if (_confirming)
 {
     <div class="modal-backdrop" @onclick="() => _confirming = false">
         <div class="modal-card" @onclick:stopPropagation="true">
-            <h3>@(IsRunning ? "Dừng lift?" : "Chạy lại lift?")</h3>
-            <p>@(IsRunning ? "Mọi màn hình Caller sẽ hiển thị lift đang dừng. Vẫn có thể gọi trong lúc này." : "Mọi màn hình Caller sẽ hiển thị lift đang chạy lại.")</p>
+            <h3>@(IsRunning ? Loc["ConfirmStopTitle"] : Loc["ConfirmStartTitle"])</h3>
+            <p>@(IsRunning ? Loc["ConfirmStopBody"] : Loc["ConfirmStartBody"])</p>
             <div class="modal-actions">
-                <button type="button" class="btn-ghost" @onclick="() => _confirming = false">Đóng</button>
-                <button type="button" class="btn-solid @(IsRunning ? "danger" : "")" @onclick="Confirm">Xác nhận</button>
+                <button type="button" class="btn-ghost" @onclick="() => _confirming = false">@Loc["Close"]</button>
+                <button type="button" class="btn-solid @(IsRunning ? "danger" : "")" @onclick="Confirm">@Loc["Confirm"]</button>
             </div>
         </div>
     </div>

@@ -3,10 +3,11 @@
 @rendermode InteractiveServer
 @inject ForkLiftApiClient Api
 @inject HttpClient Http
+@inject Localizer Loc
 
-<PageTitle>Lịch sử — Admin</PageTitle>
+<PageTitle>@Loc["AdminHistoryTitle"] — @Loc["AdminAppTitle"]</PageTitle>
 
-<h1>Lịch sử cuộc gọi</h1>
+<h1>@Loc["HistoryTitle"]</h1>
 
 @if (_loadError is not null)
 {
@@ -16,28 +17,28 @@
 <section class="admin-section">
     <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end;">
         <div class="form-row" style="margin-bottom:0;">
-            <label class="form-label">Từ ngày</label>
+            <label class="form-label">@Loc["FromDate"]</label>
             <input class="form-control" type="date" @bind="_from" />
         </div>
         <div class="form-row" style="margin-bottom:0;">
-            <label class="form-label">Đến ngày</label>
+            <label class="form-label">@Loc["ToDate"]</label>
             <input class="form-control" type="date" @bind="_to" />
         </div>
         <div class="form-row" style="margin-bottom:0;">
-            <label class="form-label">Số máy</label>
+            <label class="form-label">@Loc["ColUnitNo"]</label>
             <input class="form-control" type="number" @bind="_unitNo" style="width:100px;" />
         </div>
         <div class="form-row" style="margin-bottom:0;">
-            <label class="form-label">Loại</label>
+            <label class="form-label">@Loc["TypeFilter"]</label>
             <select class="form-control" @bind="_callType">
-                <option value="">Tất cả</option>
-                <option value="@CallType.ProductPickup">Lấy sản phẩm</option>
-                <option value="@CallType.ReturnMaterial">Lấy vật liệu trả về</option>
-                <option value="@CallType.Trouble">Sự cố</option>
+                <option value="">@Loc["All"]</option>
+                <option value="@CallType.ProductPickup">@Loc["ProductPickup"]</option>
+                <option value="@CallType.ReturnMaterial">@Loc["ReturnMaterial"]</option>
+                <option value="@CallType.Trouble">@Loc["Trouble"]</option>
             </select>
         </div>
-        <button type="button" class="btn btn-primary" @onclick="SearchAsync">Tìm</button>
-        <a class="export-btn" href="@BuildCsvUrl()" target="_blank">Export CSV</a>
+        <button type="button" class="btn btn-primary" @onclick="SearchAsync">@Loc["Search"]</button>
+        <a class="export-btn" href="@BuildCsvUrl()" target="_blank">@Loc["ExportCsv"]</a>
     </div>
 </section>
 
@@ -45,19 +46,19 @@
     <div class="table-wrap">
         <table class="admin-table">
             <thead>
-                <tr><th>Máy</th><th>Loại</th><th>Pallet</th><th>Giờ gọi</th><th>Giờ hoàn thành</th><th>Người hoàn thành</th><th>Chờ phản hồi (s)</th><th>Tổng thời gian (s)</th></tr>
+                <tr><th>@Loc["ColMachine"]</th><th>@Loc["ColType"]</th><th>@Loc["ColPallet"]</th><th>@Loc["ColCalledAt"]</th><th>@Loc["ColCompletedAt"]</th><th>@Loc["ColCompletedBy"]</th><th>@Loc["ColResponseWait"]</th><th>@Loc["ColTotalDuration"]</th></tr>
             </thead>
             <tbody>
                 @if (_entries.Count == 0)
                 {
-                    <tr><td colspan="8" style="text-align:center; color:var(--muted);">Không có dữ liệu.</td></tr>
+                    <tr><td colspan="8" style="text-align:center; color:var(--muted);">@Loc["NoHistoryData"]</td></tr>
                 }
                 else
                 {
                     @foreach (var e in _entries)
                     {
                         <tr>
-                            <td>Máy @e.UnitNo</td>
+                            <td>@Loc.Format("MachineLabel", e.UnitNo)</td>
                             <td>@TypeLabel(e.CallType)</td>
                             <td class="mono">@(e.Palette == PaletteType.None ? "—" : e.Palette.ToString())</td>
                             <td class="mono">@e.CalledAt.ToLocalTime().ToString("dd/MM HH:mm:ss")</td>
@@ -92,7 +93,7 @@
         }
         catch
         {
-            _loadError = "Không thể kết nối tới máy chủ Api.";
+            _loadError = Loc["AdminApiUnreachable"];
         }
     }
 
@@ -113,11 +114,11 @@
     private DateTime? FromUtc => _from is null ? null : DateTime.SpecifyKind(_from.Value, DateTimeKind.Local).ToUniversalTime();
     private DateTime? ToUtc => _to is null ? null : DateTime.SpecifyKind(_to.Value.AddDays(1).AddTicks(-1), DateTimeKind.Local).ToUniversalTime();
 
-    private static string TypeLabel(CallType type) => type switch
+    private string TypeLabel(CallType type) => type switch
     {
-        CallType.ProductPickup => "Lấy sản phẩm",
-        CallType.ReturnMaterial => "Lấy vật liệu trả về",
-        CallType.Trouble => "Sự cố",
+        CallType.ProductPickup => Loc["ProductPickup"],
+        CallType.ReturnMaterial => Loc["ReturnMaterial"],
+        CallType.Trouble => Loc["Trouble"],
         _ => type.ToString()
     };
 }

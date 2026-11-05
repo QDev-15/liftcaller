@@ -2,10 +2,11 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 @inject ForkLiftApiClient Api
+@inject Localizer Loc
 
-<PageTitle>Terminal — Admin</PageTitle>
+<PageTitle>@Loc["AdminTerminalsTitle"] — @Loc["AdminAppTitle"]</PageTitle>
 
-<h1>Terminal</h1>
+<h1>@Loc["AdminTerminalsTitle"]</h1>
 
 @if (_loadError is not null)
 {
@@ -14,8 +15,8 @@
 
 <section class="admin-section">
     <div class="admin-section-head">
-        <h3>Caller &amp; Receiver</h3>
-        <button type="button" class="btn btn-primary" @onclick="OpenCreate">+ Tạo Terminal mới</button>
+        <h3>@Loc["TerminalsSection"]</h3>
+        <button type="button" class="btn btn-primary" @onclick="OpenCreate">@Loc["CreateTerminal"]</button>
     </div>
     <TerminalList Terminals="_terminals" OnEdit="OpenEdit" />
 </section>
@@ -42,7 +43,7 @@
         }
         catch
         {
-            _loadError = "Không thể kết nối tới máy chủ Api.";
+            _loadError = Loc["AdminApiUnreachable"];
         }
     }
 

@@ -1,35 +1,47 @@
 @page "/login"
 @layout IMIP.TochuForkLift.Admin.Components.Layout.LoginLayout
+@inject NavigationManager Nav
+@inject Localizer Loc
 
-<PageTitle>Đăng nhập — Admin</PageTitle>
+<PageTitle>@Loc["AdminLoginTitle"] — @Loc["AdminAppTitle"]</PageTitle>
 
 <div class="login-page">
+    <div class="lang-switcher login-lang-switcher">
+        @foreach (var lang in Languages)
+        {
+            <a class="lang-btn @(Loc.Language == lang ? "active" : "")" data-enhance-nav="false"
+               href="@($"/account/language?lang={lang.ToCode()}&returnUrl={Uri.EscapeDataString(Nav.ToBaseRelativePath(Nav.Uri))}")">@lang.ToCode().ToUpperInvariant()</a>
+        }
+    </div>
+
     <div class="login-card">
-        <div class="login-brand">@Icons.Lift<span>Lift Call</span></div>
-        <p class="login-subtitle">Đăng nhập Admin</p>
+        <div class="login-brand">@Icons.Lift<span>@Loc["AppTitle"]</span></div>
+        <p class="login-subtitle">@Loc["AdminLoginTitle"]</p>
 
         @if (Error)
         {
-            <div class="form-error">Sai tên đăng nhập hoặc mật khẩu.</div>
+            <div class="form-error">@Loc["AdminLoginWrongCreds"]</div>
         }
 
         @* Plain HTML form POST (not a Blazor event) — cookie sign-in needs the real HttpContext
            of the request, which an interactive Server circuit no longer has after connecting. *@
         <form method="post" action="/account/login">
             <div class="form-row">
-                <label class="form-label" for="username">Tên đăng nhập</label>
+                <label class="form-label" for="username">@Loc["AdminUsernameLabel"]</label>
                 <input class="form-control" id="username" name="username" autocomplete="username" required />
             </div>
             <div class="form-row">
-                <label class="form-label" for="password">Mật khẩu</label>
+                <label class="form-label" for="password">@Loc["AdminPasswordLabel"]</label>
                 <input class="form-control" id="password" name="password" type="password" autocomplete="current-password" required />
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Đăng nhập</button>
+            <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">@Loc["AdminLoginButton"]</button>
         </form>
     </div>
 </div>
 
 @code {
+    private static readonly AppLanguage[] Languages = [AppLanguage.En, AppLanguage.Ja];
+
     [SupplyParameterFromQuery(Name = "error")]
     public string? ErrorFlag { get; set; }
 

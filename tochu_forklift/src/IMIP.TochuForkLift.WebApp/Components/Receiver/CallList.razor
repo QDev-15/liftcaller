@@ -1,0 +1,48 @@
+@* Single merged list — each call is either waiting (Respond button) or claimed by this Receiver
+   (Complete / Cancel buttons). Calls claimed by another Receiver are simply absent, same as before.
+   While the lift is stopped, nothing here is shown or clickable (plan.md §6.4 + operator request). *@
+@inherits LocalizedComponentBase
+
+<div class="calls-section">
+    <h3 class="section-title">@Loc["CallsSection"] @if (IsLiftRunning && Calls.Count > 0) { <span class="count">@Calls.Count</span> }</h3>
+
+    @if (!IsLiftRunning)
+    {
+        <div class="calls-locked">
+            @Icons.Power
+            <p class="calls-locked-title">@Loc["LiftLockedTitle"]</p>
+            <p class="calls-locked-body">@Loc["LiftLockedBody"]</p>
+        </div>
+    }
+    else if (Calls.Count == 0)
+    {
+        <p class="empty-note">@Loc["EmptyQueueNote"]</p>
+    }
+    else
+    {
+        <div class="call-list">
+            @{ var order = 0; }
+            @foreach (var call in Calls)
+            {
+                var isMine = call.IsResponding;
+                var cardOrder = ++order;
+                <CallCard Call="@call" Order="@cardOrder" Now="@Now" InProgress="@isMine"
+                          Overdue="@(!isMine && Now - call.CalledAt >= OverdueThreshold)"
+                          ShowRespond="@(!isMine)" OnRespond="() => OnRespond.InvokeAsync(call.UnitNo)"
+                          ShowComplete="@isMine" OnComplete="() => OnComplete.InvokeAsync(call.UnitNo)"
+                          ShowRelease="@isMine" OnRelease="() => OnRelease.InvokeAsync(call.UnitNo)" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly TimeSpan OverdueThreshold = TimeSpan.FromMinutes(3);
+
+    [Parameter, EditorRequired] public List<CallDto> Calls { get; set; } = [];
+    [Parameter] public bool IsLiftRunning { get; set; }
+    [Parameter] public DateTime Now { get; set; } = DateTime.UtcNow;
+    [Parameter] public EventCallback<int> OnRespond { get; set; }
+    [Parameter] public EventCallback<int> OnComplete { get; set; }
+    [Parameter] public EventCallback<int> OnRelease { get; set; }
+}

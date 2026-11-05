@@ -1,0 +1,22 @@
+@* Compact VI/EN/JA switcher — persists the choice to localStorage so it survives reloads, same
+   pattern as AuthStateService's TerminalIdentity (plan.md §4.3). *@
+@inject Localizer Loc
+@inject IJSRuntime Js
+
+<div class="lang-switcher">
+    @foreach (var lang in Languages)
+    {
+        <button type="button" class="lang-btn @(Loc.Language == lang ? "active" : "")" @onclick="() => Select(lang)">@lang.ToCode().ToUpperInvariant()</button>
+    }
+</div>
+
+@code {
+    private static readonly AppLanguage[] Languages = [AppLanguage.En, AppLanguage.Ja];
+
+    private async Task Select(AppLanguage lang)
+    {
+        Loc.SetLanguage(lang);
+        try { await Js.InvokeVoidAsync("localStorage.setItem", "forklift.language", lang.ToCode()); }
+        catch { /* best-effort */ }
+    }
+}

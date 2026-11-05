@@ -3,68 +3,69 @@
 @rendermode InteractiveServer
 @implements IDisposable
 @inject AdminStateSyncService Sync
+@inject Localizer Loc
 
-<PageTitle>Dashboard — Admin</PageTitle>
+<PageTitle>@Loc["AdminDashboardTitle"] — @Loc["AdminAppTitle"]</PageTitle>
 
-<h1>Dashboard</h1>
+<h1>@Loc["AdminDashboardTitle"]</h1>
 
 @if (!Sync.IsConnected)
 {
-    <div class="conn-banner">Mất kết nối tới máy chủ, đang thử kết nối lại…</div>
+    <div class="conn-banner">@Loc["AdminConnBanner"]</div>
 }
 
 <div class="card-grid">
     <div class="stat-tile">
-        <div class="stat-label">Trạng thái Lift</div>
-        <div class="stat-value">@(Sync.Snapshot.LiftState.IsRunning ? "Đang chạy" : "Đang dừng")</div>
+        <div class="stat-label">@Loc["StatLiftStatus"]</div>
+        <div class="stat-value">@(Sync.Snapshot.LiftState.IsRunning ? Loc["Running"] : Loc["Stopped"])</div>
     </div>
     <div class="stat-tile">
-        <div class="stat-label">Cuộc gọi đang active</div>
+        <div class="stat-label">@Loc["StatActiveCalls"]</div>
         <div class="stat-value">@Sync.Snapshot.Calls.Count</div>
     </div>
     <div class="stat-tile">
-        <div class="stat-label">Sự cố chưa phản hồi</div>
+        <div class="stat-label">@Loc["StatUnrespondedTrouble"]</div>
         <div class="stat-value">@Sync.Snapshot.Calls.Count(c => c.CallType == CallType.Trouble && !c.IsResponding)</div>
     </div>
     <div class="stat-tile">
-        <div class="stat-label">Đang phản hồi</div>
+        <div class="stat-label">@Loc["StatResponding"]</div>
         <div class="stat-value">@Sync.Snapshot.Calls.Count(c => c.IsResponding)</div>
     </div>
 </div>
 
 <section class="admin-section">
-    <h3>Cuộc gọi đang hoạt động</h3>
+    <h3>@Loc["ActiveCallsSection"]</h3>
     <div class="table-wrap">
         <table class="admin-table">
             <thead>
-                <tr><th>Máy</th><th>Loại</th><th>Pallet</th><th>Giờ gọi</th><th>Trạng thái</th><th>Người nhận</th></tr>
+                <tr><th>@Loc["ColMachine"]</th><th>@Loc["ColType"]</th><th>@Loc["ColPallet"]</th><th>@Loc["ColCalledAt"]</th><th>@Loc["ColStatus"]</th><th>@Loc["ColHandledBy"]</th></tr>
             </thead>
             <tbody>
                 @if (Sync.Snapshot.Calls.Count == 0)
                 {
-                    <tr><td colspan="6" style="text-align:center; color:var(--muted);">Không có cuộc gọi nào.</td></tr>
+                    <tr><td colspan="6" style="text-align:center; color:var(--muted);">@Loc["NoActiveCalls"]</td></tr>
                 }
                 else
                 {
                     @foreach (var c in Sync.Snapshot.Calls)
                     {
                         <tr>
-                            <td>Máy @c.UnitNo</td>
+                            <td>@Loc.Format("MachineLabel", c.UnitNo)</td>
                             <td>@TypeLabel(c.CallType)</td>
                             <td class="mono">@(c.Palette == PaletteType.None ? "—" : c.Palette.ToString())</td>
                             <td class="mono">@c.CalledAt.ToLocalTime().ToString("HH:mm:ss")</td>
                             <td>
                                 @if (c.IsResponding)
                                 {
-                                    <span class="status-chip responding">Đang phản hồi</span>
+                                    <span class="status-chip responding">@Loc["StatResponding"]</span>
                                 }
                                 else if (c.CallType == CallType.Trouble)
                                 {
-                                    <span class="status-chip bad">Sự cố — chưa phản hồi</span>
+                                    <span class="status-chip bad">@Loc["TroubleUnresponded"]</span>
                                 }
                                 else
                                 {
-                                    <span class="status-chip calling">Đang gọi</span>
+                                    <span class="status-chip calling">@Loc["Calling"]</span>
                                 }
                             </td>
                             <td>@(c.RespondedBy ?? "—")</td>
@@ -86,11 +87,11 @@
 
     private void OnUpdated() => InvokeAsync(StateHasChanged);
 
-    private static string TypeLabel(CallType type) => type switch
+    private string TypeLabel(CallType type) => type switch
     {
-        CallType.ProductPickup => "Lấy sản phẩm",
-        CallType.ReturnMaterial => "Lấy vật liệu trả về",
-        CallType.Trouble => "Sự cố",
+        CallType.ProductPickup => Loc["ProductPickup"],
+        CallType.ReturnMaterial => Loc["ReturnMaterial"],
+        CallType.Trouble => Loc["Trouble"],
         _ => type.ToString()
     };
 

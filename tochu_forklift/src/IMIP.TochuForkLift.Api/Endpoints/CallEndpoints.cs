@@ -15,7 +15,9 @@ public static class CallEndpoints
             return result switch
             {
                 CallOperationResult.Success => Results.NoContent(),
-                CallOperationResult.Conflict => Results.Conflict(new { message = "Lift đang xử lý cuộc gọi của bạn, không thể gọi lại." }),
+                // Message body intentionally omitted — the client (WebApp) always shows its own
+                // Loc-driven toast for this case (plan.md §6.4) and never reads this response's text.
+                CallOperationResult.Conflict => Results.Conflict(),
                 _ => Results.NotFound()
             };
         })
@@ -34,8 +36,9 @@ public static class CallEndpoints
             return result switch
             {
                 CallOperationResult.Success => Results.NoContent(),
-                // Not an error — the losing Receiver's WebApp treats 409 here as benign (plan.md §6.4).
-                CallOperationResult.Conflict => Results.Conflict(new { message = "Yêu cầu đã được tiếp nhận" }),
+                // Not an error — the losing Receiver's WebApp treats 409 here as benign (plan.md §6.4)
+                // and shows its own Loc-driven toast; this response's body is never read.
+                CallOperationResult.Conflict => Results.Conflict(),
                 _ => Results.NotFound()
             };
         })

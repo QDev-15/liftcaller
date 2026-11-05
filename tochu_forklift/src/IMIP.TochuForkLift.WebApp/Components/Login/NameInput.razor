@@ -1,13 +1,14 @@
 @* Custom-styled autocomplete — native <datalist> renders as an unstyled browser popup that clashes
    with the dark kiosk theme, so this builds the dropdown ourselves out of the existing
    .login-suggest-list/.login-suggest-item tokens (plan.md §6.3). *@
+@inherits LocalizedComponentBase
 @inject ForkLiftApiClient Api
 
 <div class="login-name-wrap" @onfocusout="HandleFocusOut">
-    <label class="login-label" for="loginName">Tên đăng nhập</label>
+    <label class="login-label" for="loginName">@Loc["LoginNameLabel"]</label>
     <input id="loginName" class="login-name-input" autocomplete="off"
-           value="@Value" @oninput="OnInput" @onfocus="() => _open = true"
-           placeholder="Nhập tên Terminal..." />
+           value="@Value" @oninput="OnInput" @onfocus="HandleFocus"
+           placeholder="@Loc["LoginNamePlaceholder"]" />
 
     @if (_open && FilteredSuggestions.Count > 0)
     {
@@ -16,7 +17,7 @@
             {
                 <button type="button" class="login-suggest-item" @onclick="() => Choose(s)">
                     <span>@s.Name</span>
-                    <span class="login-suggest-role">@(s.Role == TerminalRole.Caller ? "Caller" : "Receiver")</span>
+                    <span class="login-suggest-role">@(s.Role == TerminalRole.Caller ? Loc["RoleCaller"] : Loc["RoleReceiver"])</span>
                 </button>
             }
         </div>
@@ -39,6 +40,16 @@
     {
         try { _suggestions = await Api.GetSuggestionsAsync(); }
         catch { /* best-effort — login still works by typing the exact name */ }
+    }
+
+    // Re-fetch on every focus, not just once at startup — the Login screen can sit open long enough
+    // for Admin to add/remove a terminal in the meantime, and the suggestion list should pick that up
+    // without needing a full page reload.
+    private async Task HandleFocus()
+    {
+        _open = true;
+        try { _suggestions = await Api.GetSuggestionsAsync(); }
+        catch { /* best-effort — keep whatever we already had */ }
     }
 
     private async Task OnInput(ChangeEventArgs e)
