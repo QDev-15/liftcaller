@@ -27,6 +27,7 @@ builder.Services.AddScoped<ITerminalAuthService, TerminalAuthService>();
 builder.Services.Configure<SignalLightOptions>(builder.Configuration.GetSection(SignalLightOptions.SectionName));
 builder.Services.AddHttpClient(nameof(SignalLightNotifier));
 builder.Services.AddSingleton<ISignalLightNotifier, SignalLightNotifier>();
+builder.Services.AddSingleton<ITerminalPresenceTracker, TerminalPresenceTracker>();
 
 builder.Services.AddHealthChecks();
 

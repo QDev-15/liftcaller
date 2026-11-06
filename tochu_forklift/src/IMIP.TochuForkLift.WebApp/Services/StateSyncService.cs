@@ -14,6 +14,7 @@ public class StateSyncService(ForkLiftApiClient api) : IAsyncDisposable
     private PeriodicTimer? _pollTimer;
     private Task? _pollLoop;
     private CancellationTokenSource? _cts;
+    private int? _terminalId;
 
     public StateSnapshotDto Snapshot { get; private set; } = new();
     public HubConnectionState? ConnectionState => api.HubState;
@@ -21,8 +22,11 @@ public class StateSyncService(ForkLiftApiClient api) : IAsyncDisposable
     public event Action? Updated;
     public event Action? ConnectionStateChanged;
 
-    public async Task InitializeAsync()
+    /// <summary>terminalId identifies this tablet to the hub's presence tracking (Admin's online/offline
+    /// column, and auto-stopping a lift whose Receiver tablet drops) — pass the logged-in terminal's id.</summary>
+    public async Task InitializeAsync(int? terminalId = null)
     {
+        _terminalId = terminalId;
         api.StateChanged += OnStateChanged;
         api.HubConnectionStateChanged += _ => ConnectionStateChanged?.Invoke();
 
@@ -35,7 +39,7 @@ public class StateSyncService(ForkLiftApiClient api) : IAsyncDisposable
         }
         catch { /* retried by the poll loop */ }
 
-        try { await api.StartHubAsync(); }
+        try { await api.StartHubAsync(terminalId: _terminalId); }
         catch { /* retried by the poll loop */ }
 
         _cts = new CancellationTokenSource();
@@ -66,7 +70,7 @@ public class StateSyncService(ForkLiftApiClient api) : IAsyncDisposable
                     // no-ops once already connected.
                     if (api.HubState is not Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
                     {
-                        await api.StartHubAsync(ct: ct);
+                        await api.StartHubAsync(terminalId: _terminalId, ct: ct);
                     }
                 }
                 catch (OperationCanceledException) { throw; }

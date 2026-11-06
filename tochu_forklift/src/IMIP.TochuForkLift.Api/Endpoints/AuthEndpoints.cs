@@ -1,4 +1,5 @@
 using IMIP.TochuForkLift.Api.Services;
+using IMIP.TochuForkLift.Shared.Client;
 using IMIP.TochuForkLift.Shared.Contracts.Requests;
 
 namespace IMIP.TochuForkLift.Api.Endpoints;
@@ -11,8 +12,13 @@ public static class AuthEndpoints
 
         group.MapPost("/login", async (LoginRequest request, ITerminalAuthService service, CancellationToken ct) =>
         {
-            var result = await service.LoginAsync(request.Name, request.Pin, ct);
-            return result is not null ? Results.Ok(result) : Results.Unauthorized();
+            var (outcome, response) = await service.LoginAsync(request.Name, request.Pin, ct);
+            return outcome switch
+            {
+                ApiCallOutcome.Success => Results.Ok(response),
+                ApiCallOutcome.Conflict => Results.Conflict(),
+                _ => Results.Unauthorized()
+            };
         })
         .WithName("Login");
 

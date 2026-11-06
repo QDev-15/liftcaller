@@ -74,6 +74,9 @@ public static class Strings
         ["LoginPinLabel"] = ("PIN (4 digits)", "PIN（4桁）"),
         ["LoginError"] = ("Wrong name or PIN. Please try again.", "名前またはPINが違います。もう一度お試しください。"),
         ["LoginConnError"] = ("Can't reach the server. Please try again.", "サーバーに接続できません。もう一度お試しください。"),
+        ["LoginAlreadyOnline"] = (
+            "This terminal is already signed in on another device. Sign out there first.",
+            "この端末は別の機器で既にログインしています。先にそちらでログアウトしてください。"),
         ["RoleCaller"] = ("Caller", "Caller"),
         ["RoleReceiver"] = ("Receiver", "Receiver"),
 
@@ -128,6 +131,9 @@ public static class Strings
         ["NoTerminals"] = ("No terminals yet.", "端末がまだありません。"),
         ["Active"] = ("Active", "有効"),
         ["Inactive"] = ("Inactive", "無効"),
+        ["ColConnection"] = ("Connection", "接続"),
+        ["Online"] = ("Online", "オンライン"),
+        ["Offline"] = ("Offline", "オフライン"),
         ["Edit"] = ("Edit", "編集"),
         ["Save"] = ("Save", "保存"),
         ["CreateTerminalTitle"] = ("New Terminal", "端末を新規作成"),

@@ -87,12 +87,16 @@ public class ForkLiftApiClient : IAsyncDisposable
 
     // ---- Auth ----
 
-    public async Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken ct = default)
+    /// <summary>Outcome.Conflict means the credentials were correct but the terminal already has a
+    /// live connection elsewhere.</summary>
+    public async Task<LoginResult> LoginAsync(LoginRequest request, CancellationToken ct = default)
     {
         var response = await _http.PostAsJsonAsync("api/auth/login", request, ct);
-        if (response.StatusCode == HttpStatusCode.Unauthorized) return null;
+        if (response.StatusCode == HttpStatusCode.Unauthorized) return new LoginResult(ApiCallOutcome.Unauthorized);
+        if (response.StatusCode == HttpStatusCode.Conflict) return new LoginResult(ApiCallOutcome.Conflict);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<LoginResponse>(ct);
+        var body = await response.Content.ReadFromJsonAsync<LoginResponse>(ct);
+        return new LoginResult(ApiCallOutcome.Success, body);
     }
 
     public async Task<List<TerminalSuggestionDto>> GetSuggestionsAsync(CancellationToken ct = default)
@@ -146,11 +150,16 @@ public class ForkLiftApiClient : IAsyncDisposable
 
     // ---- SignalR hub ----
 
-    /// <summary>hubPath is relative to the HttpClient's BaseAddress, e.g. "hubs/state".</summary>
-    public async Task StartHubAsync(string hubPath = "hubs/state", CancellationToken ct = default)
+    /// <summary>
+    /// hubPath is relative to the HttpClient's BaseAddress, e.g. "hubs/state". terminalId identifies
+    /// this connection as a specific Caller/Receiver terminal to the hub's presence tracking — omit
+    /// it for an observer connection (Admin) that isn't itself a factory terminal.
+    /// </summary>
+    public async Task StartHubAsync(string hubPath = "hubs/state", int? terminalId = null, CancellationToken ct = default)
     {
         if (_hub is not null) return;
 
+        if (terminalId is int id) hubPath += (hubPath.Contains('?') ? "&" : "?") + $"terminalId={id}";
         var hubUrl = new Uri(_http.BaseAddress!, hubPath);
         _hub = new HubConnectionBuilder()
             .WithUrl(hubUrl)

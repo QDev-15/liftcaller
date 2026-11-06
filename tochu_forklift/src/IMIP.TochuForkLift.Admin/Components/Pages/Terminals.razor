@@ -1,7 +1,9 @@
 @page "/terminals"
 @attribute [Authorize]
 @rendermode InteractiveServer
+@implements IDisposable
 @inject ForkLiftApiClient Api
+@inject AdminStateSyncService Sync
 @inject Localizer Loc
 
 <PageTitle>@Loc["AdminTerminalsTitle"] — @Loc["AdminAppTitle"]</PageTitle>
@@ -31,8 +33,19 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await Sync.InitializeAsync();
+        Sync.Updated += OnSyncUpdated;
         await ReloadAsync();
     }
+
+    // Online/offline isn't part of the pushed StateSnapshotDto (it's per-terminal admin metadata,
+    // not factory-floor state) — re-pull the terminal list whenever something changes elsewhere
+    // (SignalR push, or the poll loop's safety-net tick) so the Connection column stays live.
+    private void OnSyncUpdated() => InvokeAsync(async () =>
+    {
+        await ReloadAsync();
+        StateHasChanged();
+    });
 
     private async Task ReloadAsync()
     {
@@ -66,4 +79,6 @@
     }
 
     private void CloseModal() => _showModal = false;
+
+    public void Dispose() => Sync.Updated -= OnSyncUpdated;
 }

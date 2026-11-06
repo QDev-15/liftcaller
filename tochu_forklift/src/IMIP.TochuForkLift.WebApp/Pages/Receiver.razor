@@ -78,7 +78,7 @@
             return;
         }
 
-        await Sync.InitializeAsync();
+        await Sync.InitializeAsync(_identity.TerminalId);
         Sync.Updated += OnSyncUpdated;
         Sync.ConnectionStateChanged += OnSyncUpdated;
         Loc.LanguageChanged += OnLanguageChanged;

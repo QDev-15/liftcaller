@@ -4,12 +4,12 @@
 <div class="table-wrap">
     <table class="admin-table">
         <thead>
-            <tr><th>@Loc["ColName"]</th><th>@Loc["ColRole"]</th><th>@Loc["ColUnitNo"]</th><th>@Loc["ColStatus"]</th><th></th></tr>
+            <tr><th>@Loc["ColName"]</th><th>@Loc["ColRole"]</th><th>@Loc["ColUnitNo"]</th><th>@Loc["ColStatus"]</th><th>@Loc["ColConnection"]</th><th></th></tr>
         </thead>
         <tbody>
             @if (Terminals.Count == 0)
             {
-                <tr><td colspan="5" style="text-align:center; color:var(--muted);">@Loc["NoTerminals"]</td></tr>
+                <tr><td colspan="6" style="text-align:center; color:var(--muted);">@Loc["NoTerminals"]</td></tr>
             }
             else
             {
@@ -27,6 +27,16 @@
                             else
                             {
                                 <span class="status-chip off">@Loc["Inactive"]</span>
+                            }
+                        </td>
+                        <td>
+                            @if (t.IsOnline)
+                            {
+                                <span class="status-chip on">@Loc["Online"]</span>
+                            }
+                            else
+                            {
+                                <span class="status-chip off">@Loc["Offline"]</span>
                             }
                         </td>
                         <td><button type="button" class="btn btn-sm" @onclick="() => OnEdit.InvokeAsync(t)">@Loc["Edit"]</button></td>

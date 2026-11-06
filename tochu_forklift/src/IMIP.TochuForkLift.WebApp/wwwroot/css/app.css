@@ -190,8 +190,29 @@ button{font:inherit;}
 .login-error{color:#ff9b9b; background:rgba(239,68,68,0.14); border:1px solid rgba(239,68,68,0.35); border-radius:10px; padding:10px 12px; font-size:0.86rem; text-align:center;}
 .login-back-btn{background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:10px; padding:10px; cursor:pointer; font-size:0.85rem;}
 
-@media (max-width:480px){
-  .call-grid{grid-template-columns:1fr;}
-  .status-row{grid-template-columns:1fr;}
-  .kiosk-machine{font-size:1.8rem;}
+/* Phone-width redesign — the tablet's 3 near-square tiles just scale down ugly on a narrow phone
+   (each becomes almost as tall as it is wide). Below this width, call buttons switch to a compact
+   icon-left row (the same pattern CallCard already uses for the Receiver queue), and spacing
+   tightens throughout so the whole screen reads as a real mobile layout, not a shrunk tablet. */
+@media (max-width:520px){
+  .kiosk-page{
+    gap:12px; padding:14px;
+    padding-left:max(14px, env(safe-area-inset-left,0px));
+    padding-right:max(14px, env(safe-area-inset-right,0px));
+    padding-top:max(14px, env(safe-area-inset-top,0px));
+  }
+  .kiosk-page:has(.kiosk-footer){padding-bottom:calc(max(14px, env(safe-area-inset-bottom,0px)) + 60px);}
+  .kiosk-machine{font-size:1.6rem;}
+  .status-row{grid-template-columns:1fr 1fr; gap:8px;}
+  .status-box{padding:10px 12px;}
+
+  .call-grid{grid-template-columns:1fr; gap:10px;}
+  .call-btn{
+    flex-direction:row; justify-content:flex-start; align-items:center;
+    gap:14px; min-height:0; padding:14px 18px; border-radius:14px; font-size:0.98rem;
+  }
+  .call-btn .call-icon svg{width:24px; height:24px;}
+  .call-btn .call-badge{top:50%; transform:translateY(-50%);}
+
+  .cancel-btn{padding:13px;}
 }

@@ -58,22 +58,29 @@
         try
         {
             var result = await Api.LoginAsync(new LoginRequest { Name = _name.Trim(), Pin = pin });
-            if (result is null)
+            if (result.Outcome == ApiCallOutcome.Conflict)
+            {
+                _errorKey = "LoginAlreadyOnline";
+                _pinPad?.Reset();
+                return;
+            }
+            if (result.Outcome != ApiCallOutcome.Success || result.Response is null)
             {
                 _errorKey = "LoginError";
                 _pinPad?.Reset();
                 return;
             }
 
+            var response = result.Response;
             await Auth.SetAsync(new TerminalIdentity
             {
-                TerminalId = result.TerminalId,
-                Name = result.Name,
-                Role = result.Role,
-                UnitNo = result.UnitNo
+                TerminalId = response.TerminalId,
+                Name = response.Name,
+                Role = response.Role,
+                UnitNo = response.UnitNo
             });
 
-            RedirectForRole(result.Role);
+            RedirectForRole(response.Role);
         }
         catch
         {

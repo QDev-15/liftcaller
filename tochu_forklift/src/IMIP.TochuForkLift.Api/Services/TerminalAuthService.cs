@@ -1,39 +1,50 @@
 using System.Text.RegularExpressions;
 using IMIP.TochuForkLift.Api.Data;
 using IMIP.TochuForkLift.Api.Data.Entities;
+using IMIP.TochuForkLift.Shared.Client;
 using IMIP.TochuForkLift.Shared.Contracts;
 using IMIP.TochuForkLift.Shared.Contracts.Requests;
 using Microsoft.EntityFrameworkCore;
 
 namespace IMIP.TochuForkLift.Api.Services;
 
-public partial class TerminalAuthService(ForkLiftDbContext db, ILogger<TerminalAuthService> logger) : ITerminalAuthService
+public partial class TerminalAuthService(ForkLiftDbContext db, ITerminalPresenceTracker presence, ILogger<TerminalAuthService> logger) : ITerminalAuthService
 {
     [GeneratedRegex(@"^\d{4}$")]
     private static partial Regex PinFormatRegex();
 
-    public async Task<LoginResponse?> LoginAsync(string name, string pin, CancellationToken ct = default)
+    public async Task<(ApiCallOutcome Outcome, LoginResponse? Response)> LoginAsync(string name, string pin, CancellationToken ct = default)
     {
         var terminal = await db.Terminals.SingleOrDefaultAsync(t => t.Name == name && t.IsActive, ct);
         if (terminal is null)
         {
             logger.LogInformation("Login failed — unknown or inactive terminal name {Name}", name);
-            return null;
+            return (ApiCallOutcome.Unauthorized, null);
         }
 
         if (!BCrypt.Net.BCrypt.Verify(pin, terminal.PinHash))
         {
             logger.LogInformation("Login failed — wrong PIN for terminal {Name}", name);
-            return null;
+            return (ApiCallOutcome.Unauthorized, null);
         }
 
-        return new LoginResponse
+        // One terminal, one active device — a second login while the first is still connected would
+        // let two tablets act as the same Caller/Receiver at once (duplicate calls, racing Respond).
+        // Presence comes straight from StateHub's live SignalR connections, so this only blocks a
+        // device that's genuinely still connected right now, never a stale cached login elsewhere.
+        if (presence.IsOnline(terminal.Id))
+        {
+            logger.LogInformation("Login blocked — terminal {Name} (id {Id}) is already connected elsewhere", name, terminal.Id);
+            return (ApiCallOutcome.Conflict, null);
+        }
+
+        return (ApiCallOutcome.Success, new LoginResponse
         {
             TerminalId = terminal.Id,
             Name = terminal.Name,
             Role = (TerminalRole)terminal.Role,
             UnitNo = terminal.UnitNo
-        };
+        });
     }
 
     public async Task<TerminalDto?> ValidateAsync(int terminalId, CancellationToken ct = default)
@@ -54,11 +65,13 @@ public partial class TerminalAuthService(ForkLiftDbContext db, ILogger<TerminalA
 
     public async Task<List<TerminalDto>> GetTerminalsAsync(CancellationToken ct = default)
     {
-        return await db.Terminals
+        // Mapped client-side (after the query materializes) rather than inside .Select() — ToDto now
+        // reads the in-memory presence tracker, which EF can't translate into SQL.
+        var terminals = await db.Terminals
             .AsNoTracking()
             .OrderBy(t => t.Role).ThenBy(t => t.Name)
-            .Select(t => ToDto(t))
             .ToListAsync(ct);
+        return terminals.Select(ToDto).ToList();
     }
 
     public async Task<TerminalOperationResult> CreateTerminalAsync(CreateTerminalRequest request, CancellationToken ct = default)
@@ -131,7 +144,7 @@ public partial class TerminalAuthService(ForkLiftDbContext db, ILogger<TerminalA
         return TerminalOperationResult.Ok(ToDto(terminal));
     }
 
-    private static TerminalDto ToDto(Terminal t) => new()
+    private TerminalDto ToDto(Terminal t) => new()
     {
         Id = t.Id,
         Name = t.Name,
@@ -139,6 +152,8 @@ public partial class TerminalAuthService(ForkLiftDbContext db, ILogger<TerminalA
         UnitNo = t.UnitNo,
         IsActive = t.IsActive,
         CreatedAt = t.CreatedAt,
-        UpdatedAt = t.UpdatedAt
+        UpdatedAt = t.UpdatedAt,
+        IsOnline = presence.IsOnline(t.Id),
+        LastSeenAt = presence.LastSeenAt(t.Id)
     };
 }

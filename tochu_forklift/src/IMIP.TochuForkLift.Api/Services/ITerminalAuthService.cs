@@ -1,3 +1,4 @@
+using IMIP.TochuForkLift.Shared.Client;
 using IMIP.TochuForkLift.Shared.Contracts;
 using IMIP.TochuForkLift.Shared.Contracts.Requests;
 
@@ -5,7 +6,9 @@ namespace IMIP.TochuForkLift.Api.Services;
 
 public interface ITerminalAuthService
 {
-    Task<LoginResponse?> LoginAsync(string name, string pin, CancellationToken ct = default);
+    /// <summary>Outcome is Success, Unauthorized (wrong name/PIN), or Conflict (correct credentials,
+    /// but this terminal already has a live connection elsewhere — see StateHub's presence tracking).</summary>
+    Task<(ApiCallOutcome Outcome, LoginResponse? Response)> LoginAsync(string name, string pin, CancellationToken ct = default);
     Task<List<TerminalSuggestionDto>> GetSuggestionsAsync(CancellationToken ct = default);
 
     /// <summary>Null if the terminal was deleted or deactivated since the caller last logged in — the

@@ -10,6 +10,10 @@ public class TerminalDto
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+
+    /// <summary>Live, derived from the terminal's open SignalR connection — not persisted.</summary>
+    public bool IsOnline { get; set; }
+    public DateTime? LastSeenAt { get; set; }
 }
 
 /// <summary>Lightweight entry used by the login autocomplete — GET /api/auth/suggest.</summary>
