@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IMIP.TochuForkLift.Api.Services;
 
-public class StateBroadcaster(ForkLiftDbContext db, IHubContext<StateHub> hub, ILogger<StateBroadcaster> logger) : IStateBroadcaster
+public class StateBroadcaster(ForkLiftDbContext db, IHubContext<StateHub> hub, ITerminalPresenceTracker presence, ILogger<StateBroadcaster> logger) : IStateBroadcaster
 {
     public async Task<StateSnapshotDto> BuildSnapshotAsync(CancellationToken ct = default)
     {
-        var liftStates = await db.LiftStates
+        var liftStates = (await db.LiftStates
             .AsNoTracking()
             .Select(x => new LiftStateDto
             {
@@ -19,7 +19,9 @@ public class StateBroadcaster(ForkLiftDbContext db, IHubContext<StateHub> hub, I
                 UpdatedAt = x.UpdatedAt,
                 UpdatedBy = x.UpdatedBy
             })
-            .ToListAsync(ct);
+            .ToListAsync(ct))
+            .Select(l => { l.IsOnline = presence.IsOnline(l.TerminalId); return l; })
+            .ToList();
 
         // Trouble always first; within each tier, earliest call first — plan.md §6 (fixed, not configurable).
         var calls = await db.LiftCalls

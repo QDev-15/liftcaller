@@ -47,6 +47,16 @@ public class StateHub(IServiceScopeFactory scopeFactory, ITerminalPresenceTracke
             logger.LogInformation("Terminal {TerminalId} disconnected ({ConnectionId}) — offline in {Grace}s unless it reconnects",
                 terminalId, Context.ConnectionId, OfflineGrace.TotalSeconds);
 
+            // Broadcast the offline flag immediately — LiftStateDto.IsOnline lets Callers stop
+            // showing a disconnected lift as "running" right away, without waiting on the grace
+            // period below (that period only protects the persisted IsRunning flag from flapping
+            // on a brief Wi-Fi drop; it used to also delay what Callers saw, which was the actual
+            // "phản hồi chậm" complaint).
+            using (var scope = scopeFactory.CreateScope())
+            {
+                await scope.ServiceProvider.GetRequiredService<IStateBroadcaster>().BroadcastAsync();
+            }
+
             var cts = new CancellationTokenSource();
             PendingOffline[terminalId] = cts;
             _ = MarkOfflineAfterGraceAsync(terminalId, cts.Token);
@@ -68,15 +78,13 @@ public class StateHub(IServiceScopeFactory scopeFactory, ITerminalPresenceTracke
             using var scope = scopeFactory.CreateScope();
             var liftState = scope.ServiceProvider.GetRequiredService<ILiftStateService>();
 
+            // Nothing to do if it wasn't running — the immediate broadcast in OnDisconnectedAsync
+            // already told every screen this terminal is offline.
             var states = await liftState.GetAllAsync(ct);
             if (states.FirstOrDefault(s => s.TerminalId == terminalId) is { IsRunning: true })
             {
                 logger.LogWarning("Terminal {TerminalId} went offline while its lift was running — stopping it", terminalId);
                 await liftState.SetAsync(terminalId, false, "system (offline)", ct); // also broadcasts
-            }
-            else
-            {
-                await scope.ServiceProvider.GetRequiredService<IStateBroadcaster>().BroadcastAsync(ct);
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

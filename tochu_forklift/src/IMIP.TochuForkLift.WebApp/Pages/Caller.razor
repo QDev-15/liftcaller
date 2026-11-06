@@ -39,8 +39,10 @@
         : Sync.Snapshot.Calls.FirstOrDefault(c => c.UnitNo == _identity.UnitNo);
 
     // Each Receiver terminal is its own independent lift — the Caller just needs to know whether
-    // any lift is available, not which one.
-    private bool AnyLiftRunning => Sync.Snapshot.LiftStates.Any(l => l.IsRunning);
+    // any lift is available, not which one. IsOnline is required too so a Receiver tablet that's
+    // been turned off/disconnected stops counting as "running" instantly, instead of waiting out
+    // StateHub's offline grace period before the persisted IsRunning flag actually flips.
+    private bool AnyLiftRunning => Sync.Snapshot.LiftStates.Any(l => l.IsRunning && l.IsOnline);
 
     private bool IsConnected => Sync.ConnectionState is Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected;
 
