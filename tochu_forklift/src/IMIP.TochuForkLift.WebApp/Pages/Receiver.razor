@@ -19,9 +19,9 @@
             </div>
         </div>
 
-        <LiftToggle IsRunning="@Sync.Snapshot.LiftState.IsRunning" OnToggle="OnLiftToggle" />
+        <LiftToggle IsRunning="@MyLiftIsRunning" OnToggle="OnLiftToggle" />
 
-        <CallList Calls="@VisibleCalls" Now="@_now" IsLiftRunning="@Sync.Snapshot.LiftState.IsRunning"
+        <CallList Calls="@VisibleCalls" Now="@_now" IsLiftRunning="@MyLiftIsRunning"
                   OnRespond="OnRespond" OnComplete="OnComplete" OnRelease="OnRelease" />
 
         <Toast Message="@_toast" />
@@ -44,6 +44,11 @@
 
     // Optimistic client-side hide while waiting for the next snapshot after losing a claim race (plan.md §6.4).
     private readonly HashSet<int> _locallyHidden = [];
+
+    // Each Receiver terminal is its own independent lift — this terminal only cares about its own
+    // running/stopped state (Caller screens separately show the OR across every lift).
+    private bool MyLiftIsRunning => Sync.Snapshot.LiftStates
+        .FirstOrDefault(l => l.TerminalId == _identity?.TerminalId)?.IsRunning ?? false;
 
     // A call claimed by another Receiver is simply absent here, not shown disabled (plan.md §6.4).
     // Order: Responding calls before waiting ones; within each group, Trouble first, then FIFO —
@@ -127,7 +132,7 @@
 
     // Buttons that trigger these are hidden while the lift is stopped, but guard here too in case a
     // tap lands right as the lift state flips (plan.md §6.4 + operator request: no action while stopped).
-    private bool CanAct => Sync.Snapshot.LiftState.IsRunning;
+    private bool CanAct => MyLiftIsRunning;
 
     private async Task OnRespond(int unitNo)
     {
@@ -155,7 +160,7 @@
     private async Task OnLiftToggle(bool running)
     {
         if (_identity is null) return;
-        await Api.SetLiftStateAsync(new SetLiftStateRequest { IsRunning = running, UpdatedBy = _identity.Name });
+        await Api.SetLiftStateAsync(new SetLiftStateRequest { TerminalId = _identity.TerminalId, IsRunning = running, UpdatedBy = _identity.Name });
     }
 
     private async Task ShowToastAsync(string message)

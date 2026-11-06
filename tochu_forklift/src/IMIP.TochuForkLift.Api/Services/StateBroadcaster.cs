@@ -10,7 +10,16 @@ public class StateBroadcaster(ForkLiftDbContext db, IHubContext<StateHub> hub, I
 {
     public async Task<StateSnapshotDto> BuildSnapshotAsync(CancellationToken ct = default)
     {
-        var liftState = await db.LiftStates.AsNoTracking().SingleOrDefaultAsync(x => x.Id == 1, ct);
+        var liftStates = await db.LiftStates
+            .AsNoTracking()
+            .Select(x => new LiftStateDto
+            {
+                TerminalId = x.TerminalId,
+                IsRunning = x.IsRunning,
+                UpdatedAt = x.UpdatedAt,
+                UpdatedBy = x.UpdatedBy
+            })
+            .ToListAsync(ct);
 
         // Trouble always first; within each tier, earliest call first — plan.md §6 (fixed, not configurable).
         var calls = await db.LiftCalls
@@ -31,12 +40,7 @@ public class StateBroadcaster(ForkLiftDbContext db, IHubContext<StateHub> hub, I
 
         return new StateSnapshotDto
         {
-            LiftState = new LiftStateDto
-            {
-                IsRunning = liftState?.IsRunning ?? false,
-                UpdatedAt = liftState?.UpdatedAt ?? DateTime.UtcNow,
-                UpdatedBy = liftState?.UpdatedBy
-            },
+            LiftStates = liftStates,
             Calls = calls
         };
     }
@@ -45,7 +49,7 @@ public class StateBroadcaster(ForkLiftDbContext db, IHubContext<StateHub> hub, I
     {
         var snapshot = await BuildSnapshotAsync(ct);
         await hub.Clients.All.SendAsync("StateChanged", snapshot, ct);
-        logger.LogDebug("Broadcast StateChanged: {CallCount} active call(s), lift running = {IsRunning}",
-            snapshot.Calls.Count, snapshot.LiftState.IsRunning);
+        logger.LogDebug("Broadcast StateChanged: {CallCount} active call(s), {RunningCount}/{LiftCount} lift(s) running",
+            snapshot.Calls.Count, snapshot.LiftStates.Count(l => l.IsRunning), snapshot.LiftStates.Count);
     }
 }

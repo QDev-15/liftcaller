@@ -4,6 +4,6 @@ namespace IMIP.TochuForkLift.Api.Services;
 
 public interface ILiftStateService
 {
-    Task<LiftStateDto> GetAsync(CancellationToken ct = default);
-    Task SetAsync(bool isRunning, string? updatedBy, CancellationToken ct = default);
+    Task<List<LiftStateDto>> GetAllAsync(CancellationToken ct = default);
+    Task SetAsync(int terminalId, bool isRunning, string? updatedBy, CancellationToken ct = default);
 }

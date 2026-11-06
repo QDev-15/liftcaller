@@ -11,14 +11,14 @@ public static class LiftStateEndpoints
 
         group.MapGet("/", async (ILiftStateService service, CancellationToken ct) =>
         {
-            var state = await service.GetAsync(ct);
-            return Results.Ok(state);
+            var states = await service.GetAllAsync(ct);
+            return Results.Ok(states);
         })
         .WithName("GetLiftState");
 
         group.MapPut("/", async (SetLiftStateRequest request, ILiftStateService service, CancellationToken ct) =>
         {
-            await service.SetAsync(request.IsRunning, request.UpdatedBy, ct);
+            await service.SetAsync(request.TerminalId, request.IsRunning, request.UpdatedBy, ct);
             return Results.NoContent();
         })
         .WithName("SetLiftState");

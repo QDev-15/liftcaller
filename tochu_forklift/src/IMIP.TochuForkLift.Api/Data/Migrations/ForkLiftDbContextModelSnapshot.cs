@@ -123,7 +123,7 @@ namespace IMIP.TochuForkLift.Api.Data.Migrations
 
             modelBuilder.Entity("IMIP.TochuForkLift.Api.Data.Entities.LiftState", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("TerminalId")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsRunning")
@@ -139,20 +139,9 @@ namespace IMIP.TochuForkLift.Api.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.HasKey("Id");
+                    b.HasKey("TerminalId");
 
-                    b.ToTable("LiftState", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_LiftState_SingleRow", "[Id] = 1");
-                        });
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            IsRunning = false,
-                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        });
+                    b.ToTable("LiftState", (string)null);
                 });
 
             modelBuilder.Entity("IMIP.TochuForkLift.Api.Data.Entities.Terminal", b =>
@@ -211,6 +200,15 @@ namespace IMIP.TochuForkLift.Api.Data.Migrations
 
                             t.HasCheckConstraint("CK_Terminal_UnitNo_RequiredForCaller", "[Role] = 2 OR [UnitNo] IS NOT NULL");
                         });
+                });
+
+            modelBuilder.Entity("IMIP.TochuForkLift.Api.Data.Entities.LiftState", b =>
+                {
+                    b.HasOne("IMIP.TochuForkLift.Api.Data.Entities.Terminal", null)
+                        .WithOne()
+                        .HasForeignKey("IMIP.TochuForkLift.Api.Data.Entities.LiftState", "TerminalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

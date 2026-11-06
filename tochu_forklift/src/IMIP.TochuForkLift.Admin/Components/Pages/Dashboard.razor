@@ -17,7 +17,7 @@
 <div class="card-grid">
     <div class="stat-tile">
         <div class="stat-label">@Loc["StatLiftStatus"]</div>
-        <div class="stat-value">@(Sync.Snapshot.LiftState.IsRunning ? Loc["Running"] : Loc["Stopped"])</div>
+        <div class="stat-value">@(Sync.Snapshot.LiftStates.Any(l => l.IsRunning) ? Loc["Running"] : Loc["Stopped"])</div>
     </div>
     <div class="stat-tile">
         <div class="stat-label">@Loc["StatActiveCalls"]</div>

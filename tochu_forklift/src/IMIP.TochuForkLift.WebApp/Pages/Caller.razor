@@ -10,7 +10,7 @@
 @if (_identity is not null)
 {
     <div class="kiosk-page">
-        <StatusHeader UnitNo="@_identity.UnitNo!.Value" LiftRunning="@Sync.Snapshot.LiftState.IsRunning" ActiveCall="@ActiveCall" Now="@_now" />
+        <StatusHeader UnitNo="@_identity.UnitNo!.Value" LiftRunning="@AnyLiftRunning" ActiveCall="@ActiveCall" Now="@_now" />
 
         <CallButtons ActiveCall="@ActiveCall" OnCall="OnCall" />
 
@@ -37,6 +37,10 @@
     private CallDto? ActiveCall => _identity is null
         ? null
         : Sync.Snapshot.Calls.FirstOrDefault(c => c.UnitNo == _identity.UnitNo);
+
+    // Each Receiver terminal is its own independent lift — the Caller just needs to know whether
+    // any lift is available, not which one.
+    private bool AnyLiftRunning => Sync.Snapshot.LiftStates.Any(l => l.IsRunning);
 
     private bool IsConnected => Sync.ConnectionState is Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected;
 

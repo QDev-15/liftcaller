@@ -6,23 +6,26 @@ namespace IMIP.TochuForkLift.Api.Services;
 
 public class LiftStateService(ForkLiftDbContext db, IStateBroadcaster broadcaster) : ILiftStateService
 {
-    public async Task<LiftStateDto> GetAsync(CancellationToken ct = default)
+    public async Task<List<LiftStateDto>> GetAllAsync(CancellationToken ct = default)
     {
-        var state = await db.LiftStates.AsNoTracking().SingleOrDefaultAsync(x => x.Id == 1, ct);
-        return new LiftStateDto
-        {
-            IsRunning = state?.IsRunning ?? false,
-            UpdatedAt = state?.UpdatedAt ?? DateTime.UtcNow,
-            UpdatedBy = state?.UpdatedBy
-        };
+        return await db.LiftStates
+            .AsNoTracking()
+            .Select(x => new LiftStateDto
+            {
+                TerminalId = x.TerminalId,
+                IsRunning = x.IsRunning,
+                UpdatedAt = x.UpdatedAt,
+                UpdatedBy = x.UpdatedBy
+            })
+            .ToListAsync(ct);
     }
 
-    public async Task SetAsync(bool isRunning, string? updatedBy, CancellationToken ct = default)
+    public async Task SetAsync(int terminalId, bool isRunning, string? updatedBy, CancellationToken ct = default)
     {
-        var state = await db.LiftStates.SingleOrDefaultAsync(x => x.Id == 1, ct);
+        var state = await db.LiftStates.SingleOrDefaultAsync(x => x.TerminalId == terminalId, ct);
         if (state is null)
         {
-            state = new Data.Entities.LiftState { Id = 1 };
+            state = new Data.Entities.LiftState { TerminalId = terminalId };
             db.LiftStates.Add(state);
         }
 
