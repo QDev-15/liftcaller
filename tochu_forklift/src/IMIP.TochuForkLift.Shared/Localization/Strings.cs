@@ -74,6 +74,7 @@ public static class Strings
         ["LoginPinLabel"] = ("PIN (4 digits)", "PIN（4桁）"),
         ["LoginError"] = ("Wrong name or PIN. Please try again.", "名前またはPINが違います。もう一度お試しください。"),
         ["LoginConnError"] = ("Can't reach the server. Please try again.", "サーバーに接続できません。もう一度お試しください。"),
+        ["LoginAlreadyOnlineTitle"] = ("Already Signed In", "既にログイン済みです"),
         ["LoginAlreadyOnline"] = (
             "This terminal is already signed in on another device. Sign out there first.",
             "この端末は別の機器で既にログインしています。先にそちらでログアウトしてください。"),

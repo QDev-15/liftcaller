@@ -30,9 +30,23 @@
     </div>
 </div>
 
+@if (_showAlreadyOnline)
+{
+    <div class="modal-backdrop" @onclick="() => _showAlreadyOnline = false">
+        <div class="modal-card" @onclick:stopPropagation="true">
+            <h3>@Loc["LoginAlreadyOnlineTitle"]</h3>
+            <p>@Loc["LoginAlreadyOnline"]</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-solid" @onclick="() => _showAlreadyOnline = false">@Loc["Close"]</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private string _name = "";
     private string? _errorKey;
+    private bool _showAlreadyOnline;
     private PinPad? _pinPad;
     private bool _submitting;
 
@@ -54,13 +68,14 @@
         if (_submitting) return;
         _submitting = true;
         _errorKey = null;
+        _showAlreadyOnline = false;
 
         try
         {
             var result = await Api.LoginAsync(new LoginRequest { Name = _name.Trim(), Pin = pin });
             if (result.Outcome == ApiCallOutcome.Conflict)
             {
-                _errorKey = "LoginAlreadyOnline";
+                _showAlreadyOnline = true;
                 _pinPad?.Reset();
                 return;
             }
